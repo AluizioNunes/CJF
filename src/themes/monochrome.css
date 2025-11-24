@@ -1,0 +1,9 @@
+/* Monochrome theme */
+.theme-monochrome { --accent: #9ca3af; }
+.theme-monochrome .ant-layout-header { background: #0f0f0f !important; }
+.theme-monochrome .ant-card { background: #171717 !important; border-color: #262626 !important; }
+.theme-monochrome .ant-btn { border-radius: 8px; text-transform: uppercase; letter-spacing: .03em; font-weight: 600; transition: all .2s ease; }
+.theme-monochrome .ant-btn-text { color: #e5e5e5; }
+.theme-monochrome .ant-btn-text:hover { color: var(--accent); transform: translateY(-1px); }
+.theme-monochrome .ant-input, .theme-monochrome .ant-select-selector, .theme-monochrome .ant-input-number, .theme-monochrome .ant-picker { background: #171717 !important; border-color: #262626 !important; color: #e5e5e5 !important; }
+.theme-monochrome .ant-switch-checked { background: var(--accent) !important; }

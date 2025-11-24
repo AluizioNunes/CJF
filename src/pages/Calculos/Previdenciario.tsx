@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Col, DatePicker, Form, InputNumber, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
+import { Button, Card, Col, DatePicker, Form, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
 import { fetchInpcSerieCached } from '../../services/ibge'
 import { calcularComIndicesEJuros, calcularDetalhadoMensal } from '../../utils/calculo'
 import type { RegraMarcoJuros } from '../../utils/calculo'
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useParametros } from '../../context/ParamsContext'
 import dayjs from 'dayjs'
 import { listarClientes, listarCausasProcessos, type Cliente, type CausaProcesso } from '../../services/api'
+import InfoTooltip from '../../components/InfoTooltip'
 
 export default function Previdenciario() {
   const { t } = useTranslation()
@@ -35,19 +36,7 @@ export default function Previdenciario() {
     load()
   }, [])
 
-  const loadPreset = (key: string) => {
-    try {
-      const raw = localStorage.getItem(key)
-      if (!raw) return null
-      const p = JSON.parse(raw)
-      return {
-        ...p,
-        inicioPeriodo: p.inicioPeriodo ? dayjs(p.inicioPeriodo) : undefined,
-        fimPeriodo: p.fimPeriodo ? dayjs(p.fimPeriodo) : undefined,
-        dataAjuizamento: p.dataAjuizamento ? dayjs(p.dataAjuizamento) : undefined,
-      }
-    } catch { return null }
-  }
+  
 
   const savePreset = (scope: 'processo' | 'cliente') => {
     const values = form.getFieldsValue()
@@ -73,24 +62,7 @@ export default function Previdenciario() {
     localStorage.setItem(key, JSON.stringify(payload))
   }
 
-  const prefillFromSelection = (procId?: number, cliId?: number) => {
-    let preset = procId ? loadPreset(`cjf:calc_preset:previdenciario:processo:${procId}`) : null
-    if (!preset && cliId) preset = loadPreset(`cjf:calc_preset:previdenciario:cliente:${cliId}`)
-    if (!preset) {
-      preset = {
-        valorInicial: 10000,
-        inicioPeriodo: dayjs().subtract(6, 'month'),
-        fimPeriodo: dayjs(),
-        jurosMensais: regras?.jurosPadrao?.taxaMensalPercent ?? 0.5,
-        metodoJuros: regras?.jurosPadrao?.metodo ?? 'simples',
-        usarMarcos: regras?.usarMarcos ?? false,
-        baseTemporal: regras?.baseTemporal ?? 'mensal',
-        arredondamento: regras?.arredondamento ?? 'mensal',
-        mostrarDetalhe: true,
-      }
-    }
-    form.setFieldsValue(preset)
-  }
+  
 
   const onCalculate = async () => {
     const values = form.getFieldsValue()
@@ -149,14 +121,24 @@ export default function Previdenciario() {
   return (
     <Row gutter={[16,16]}>
       <Col xs={24} md={12}>
-        <Card title={t('pages.calculos.previdenciario.title')}>
+        <Card title={<>
+          {t('pages.calculos.previdenciario.title')}
+          <InfoTooltip
+            title="Previdenciário (INPC + juros)"
+            content={<>
+              <div>Indexador INPC; para Fazenda Pública, consolida até 12/2021 e aplica SELIC daí em diante.</div>
+              <div>Referências: linhas 1837–1891 e 1922–1926. Serviços: `src/services/ibge.ts:55-59`.</div>
+            </>}
+          />
+        </>}>
           <Form form={form} layout="vertical" initialValues={{
             metodoJuros: regras?.jurosPadrao?.metodo ?? 'simples',
             jurosMensais: regras?.jurosPadrao?.taxaMensalPercent ?? undefined,
             arredondamento: regras?.arredondamento ?? 'mensal',
             baseTemporal: regras?.baseTemporal ?? 'mensal',
             preset: 'previdenciario_padrao',
-            usarMarcos: regras?.usarMarcos ?? false
+            usarMarcos: regras?.usarMarcos ?? false,
+            fimPeriodo: dayjs()
           }}>
             <Row gutter={8}>
               <Col span={12}>
@@ -164,7 +146,7 @@ export default function Previdenciario() {
                   <Select
                     allowClear showSearch optionFilterProp="label"
                     value={clienteId}
-                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); prefillFromSelection(undefined, v) }}
+                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); form.setFieldsValue({ valorInicial: undefined, inicioPeriodo: undefined, fimPeriodo: dayjs() }) }}
                     options={(Array.isArray(clientes) ? clientes : []).map(c => ({ label: c.nome, value: c.id }))}
                   />
                 </Form.Item>
@@ -174,11 +156,19 @@ export default function Previdenciario() {
                   <Select
                     allowClear showSearch optionFilterProp="label"
                     value={processoId}
-                    onChange={(v) => { setProcessoId(v); prefillFromSelection(v, clienteId) }}
+                    disabled={!clienteId}
+                    onChange={(v) => { setProcessoId(v); const p = (processos||[]).find(x=>x.id===v); form.setFieldsValue({ valorInicial: p?.valor ?? undefined, inicioPeriodo: p?.dataDistribuicao ? dayjs(p.dataDistribuicao) : undefined, fimPeriodo: dayjs() }) }}
                     options={(Array.isArray(processos) ? processos : [])
                       .filter(p => !clienteId || p.cliente_id === clienteId)
                       .map(p => ({ label: `${p.numero}${p.descricao ? ' - ' + p.descricao : ''}`, value: p.id }))}
                   />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={8}>
+              <Col span={12}>
+                <Form.Item name="marcoTipo" label="Marco temporal">
+                  <Select options={[{ value: 'ajuizamento', label: 'Ajuizamento' }, { value: 'citacao', label: 'Citação' }, { value: 'sentenca', label: 'Sentença' }]} />
                 </Form.Item>
               </Col>
             </Row>
@@ -187,7 +177,7 @@ export default function Previdenciario() {
               <Button onClick={() => savePreset('cliente')} disabled={!clienteId}>Salvar parâmetros padrão do cliente</Button>
             </Space>
             <Form.Item name="valorInicial" label={t('pages.calculos.fields.valorInicial')} rules={[{ required: true }]}> 
-              <InputNumber min={0} style={{ width: '100%' }} prefix="R$" precision={2} />
+              <MoneyInput min={0} precision={2} disabled={!processoId} />
             </Form.Item>
             <Form.Item name="inicioPeriodo" label={t('pages.calculos.fields.inicioPeriodo')} rules={[{ required: true }]}> 
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
@@ -210,33 +200,50 @@ export default function Previdenciario() {
               />
             </Form.Item>
             <Form.Item name="jurosMensais" label={t('pages.calculos.fields.jurosMensais')}> 
-              <InputNumber min={0} style={{ width: '100%' }} suffix="%" precision={4} />
+              <PercentInput min={0} precision={4} />
             </Form.Item>
-            <Form.Item name="metodoJuros" label={t('pages.calculos.fields.metodoJuros')}>
+            <Form.Item name="metodoJuros" label={<>
+              {t('pages.calculos.fields.metodoJuros')}
+              <InfoTooltip content={<>
+                <div>Simples: juros sobre principal corrigido mês a mês; Composto: acumula multiplicativamente.</div>
+                <div>Implementação: `src/utils/calculo.ts:85-100, 252-272`.</div>
+              </>} />
+            </>}>
               <Radio.Group disabled={modoEstrito}>
                 <Radio value="simples">Simples</Radio>
                 <Radio value="composto">Composto</Radio>
               </Radio.Group>
             </Form.Item>
-            <Form.Item label={t('pages.calculos.fields.usarMarcos')} name="usarMarcos" valuePropName="checked">
+            <Form.Item label={<>
+              {t('pages.calculos.fields.usarMarcos')}
+              <InfoTooltip content={<>
+                <div>Permite dividir o período por um marco processual (ex.: ajuizamento/citação/sentença).</div>
+                <div>Regime mensal detalhado: `src/utils/calculo.ts:220-305`.</div>
+              </>} />
+            </>} name="usarMarcos" valuePropName="checked">
               <Switch disabled={modoEstrito} />
             </Form.Item>
             <Row gutter={8}>
               <Col span={12}>
-                <Form.Item name="dataAjuizamento" label={t('pages.calculos.fields.dataAjuizamento')}>
+                <Form.Item name="dataAjuizamento" label={<>
+                  {t('pages.calculos.fields.dataAjuizamento')}
+                  <InfoTooltip content={<>
+                    <div>Data do marco selecionado; define a transição de juros/regime.</div>
+                  </>} />
+                </>}>
                   <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="jurosAntesPercent" label={t('pages.calculos.fields.jurosAntes')}>
-                  <InputNumber min={0} style={{ width: '100%' }} suffix="%" precision={4} disabled={modoEstrito} />
+                  <PercentInput min={0} precision={4} disabled={modoEstrito} />
                 </Form.Item>
               </Col>
             </Row>
             <Row gutter={8}>
               <Col span={12}>
                 <Form.Item name="jurosDepoisPercent" label={t('pages.calculos.fields.jurosDepois')}>
-                  <InputNumber min={0} style={{ width: '100%' }} suffix="%" precision={4} disabled={modoEstrito} />
+                  <PercentInput min={0} precision={4} disabled={modoEstrito} />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -313,7 +320,23 @@ export default function Previdenciario() {
             INPC (SIDRA 1736, variável 44) mensal, Brasil. Juros configuráveis.
           </Typography.Paragraph>
         </Card>
+        <Card title="Ajuda" style={{ marginTop: 12 }}>
+          <Typography.Paragraph>
+            INPC como indexador; para Fazenda, consolida até 12/2021 e aplica SELIC (manual: 1837–1891 e 1922–1926).
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Séries: INPC `src/services/ibge.ts:55-59`; SELIC `src/services/bcb.ts:32-44`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Núcleo: `src/utils/calculo.ts:37-40, 91-100, 220-305`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Manual CJF PDF: <a href="https://www.cjf.jus.br/publico/biblioteca/Res%20267-2013.pdf" target="_blank">Abrir</a>
+          </Typography.Paragraph>
+        </Card>
       </Col>
     </Row>
   )
 }
+import MoneyInput from '../../components/MoneyInput'
+import PercentInput from '../../components/PercentInput'

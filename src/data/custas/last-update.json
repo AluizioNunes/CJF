@@ -1,0 +1,340 @@
+{
+  "generatedAt": "2025-11-24T17:15:49.695Z",
+  "regions": {
+    "CJF": {
+      "count": 2,
+      "ok": 2,
+      "fail": 0,
+      "sourcesStatus": [
+        {
+          "url": "https://www.cjf.jus.br/publico/biblioteca/Res%20267-2013.pdf",
+          "type": "pdf",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:15:49.695Z",
+          "finishedAt": "2025-11-24T17:15:51.031Z"
+        },
+        {
+          "url": "https://www.cjf.jus.br/cjf/noticias/2013/dezembro-1/nova-versao-do-manual-de-calculos-da-justica-federal-esta-disponivel-para-consulta",
+          "type": "html",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:15:51.031Z",
+          "finishedAt": "2025-11-24T17:15:51.990Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 50,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [],
+        "updatedAt": "2025-11-24T17:15:51.992Z",
+        "observacoes": "Manual CJF 2025 referencia fórmulas; valores regionais prevalecem. Tabela I: 1% base, mínimo R$ 50 como padrão inicial."
+      },
+      "extractedSummary": null,
+      "differences": [],
+      "updatedAt": "2025-11-24T17:15:51.993Z"
+    },
+    "TRF1": {
+      "count": 2,
+      "ok": 0,
+      "fail": 2,
+      "sourcesStatus": [
+        {
+          "url": "https://www.trf1.jus.br/sjap/processual/calculos-custas-e-despesas-processuais",
+          "type": "html",
+          "status": 403,
+          "ok": false,
+          "error": "Request failed with status code 403",
+          "startedAt": "2025-11-24T17:15:51.993Z",
+          "finishedAt": "2025-11-24T17:15:52.604Z"
+        },
+        {
+          "url": "https://portal.trf1.jus.br/sjgo/processual/calculos-custas-e-despesas-processuais/calculos-custas-e-despesas-processuais.htm",
+          "type": "html",
+          "status": 504,
+          "ok": false,
+          "error": "Request failed with status code 504",
+          "startedAt": "2025-11-24T17:15:52.604Z",
+          "finishedAt": "2025-11-24T17:15:52.971Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 50,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [
+          "SJGO-Goiás",
+          "SJMT-Mato Grosso",
+          "SJBA-Bahia",
+          "SJAM-Amazonas",
+          "SJPA-Pará",
+          "SJRO-Rondônia",
+          "SJAC-Acre",
+          "SJRR-Roraima",
+          "SJPI-Piauí",
+          "SJMA-Maranhão",
+          "SJTO-Tocantins"
+        ],
+        "updatedAt": "2025-11-24T17:15:52.973Z",
+        "observacoes": "Valores definidos por portarias regionais; DF/E-Proc com isenções de porte. Tabela I: 1% base, mínimo R$ 50."
+      },
+      "extractedSummary": {
+        "ok": false,
+        "error": "Request failed with status code 403"
+      },
+      "differences": [],
+      "updatedAt": "2025-11-24T17:15:53.152Z"
+    },
+    "TRF2": {
+      "count": 2,
+      "ok": 2,
+      "fail": 0,
+      "sourcesStatus": [
+        {
+          "url": "https://www.trf2.jus.br/trf2/artigo/saj/custas-judiciais-no-trf2",
+          "type": "html",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:15:53.152Z",
+          "finishedAt": "2025-11-24T17:15:53.560Z"
+        },
+        {
+          "url": "https://www.trf2.jus.br/jfrj/consultas-e-servicos/custas-judiciais",
+          "type": "html",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:15:53.560Z",
+          "finishedAt": "2025-11-24T17:15:53.664Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 50,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [
+          "JFRJ-Rio de Janeiro",
+          "JFES-Espírito Santo"
+        ],
+        "updatedAt": "2025-11-24T17:15:53.666Z",
+        "observacoes": "Tabela em UFIR convertida para reais; porte isento no e-Proc conforme TRF2. Tabela I: 1% base, mínimo R$ 50."
+      },
+      "extractedSummary": {
+        "ufir": null,
+        "tabelaIII": {
+          "certidao": null,
+          "reprografia": null
+        }
+      },
+      "differences": [],
+      "updatedAt": "2025-11-24T17:15:53.763Z"
+    },
+    "TRF3": {
+      "count": 2,
+      "ok": 0,
+      "fail": 2,
+      "sourcesStatus": [
+        {
+          "url": "https://web.trf3.jus.br/atos-normativos/atos-normativos-dir/presidência/resoluções/2017/resolução0138.htm",
+          "type": "html",
+          "status": 0,
+          "ok": false,
+          "error": "timeout of 15000ms exceeded",
+          "startedAt": "2025-11-24T17:15:53.764Z",
+          "finishedAt": "2025-11-24T17:16:08.777Z"
+        },
+        {
+          "url": "https://www.trf3.jus.br/seju/custasgru",
+          "type": "html",
+          "status": 0,
+          "ok": false,
+          "error": "timeout of 15000ms exceeded",
+          "startedAt": "2025-11-24T17:16:08.777Z",
+          "finishedAt": "2025-11-24T17:16:23.790Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 80,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [
+          "JFSP-São Paulo",
+          "JFMS-Mato Grosso do Sul"
+        ],
+        "updatedAt": "2025-11-24T17:16:23.793Z",
+        "observacoes": "Resolução PRES nº 138/2017 define Tabela I/II/III; valores típicos em reais. Tabela I: 1% base, mínimo R$ 80."
+      },
+      "extractedSummary": {
+        "ok": false,
+        "error": "timeout of 30000ms exceeded"
+      },
+      "differences": [],
+      "updatedAt": "2025-11-24T17:16:53.809Z"
+    },
+    "TRF4": {
+      "count": 2,
+      "ok": 2,
+      "fail": 0,
+      "sourcesStatus": [
+        {
+          "url": "https://www.trf4.jus.br/trf4/controlador.php?acao=pagina_visualizar&id_pagina=796",
+          "type": "html",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:16:53.809Z",
+          "finishedAt": "2025-11-24T17:16:54.124Z"
+        },
+        {
+          "url": "https://www.trf4.jus.br/trf4/controlador.php?acao=pagina_visualizar&id_pagina=407",
+          "type": "html",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:16:54.124Z",
+          "finishedAt": "2025-11-24T17:16:54.358Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 60,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [
+          "JFPR-Curitiba",
+          "JFSC-Florianópolis",
+          "JFRS-Porto Alegre"
+        ],
+        "updatedAt": "2025-11-24T17:16:54.361Z",
+        "observacoes": "Valores públicos no portal do TRF4; percentuais/limites publicados por tabela regional. Tabela I: 1% base, mínimo R$ 60."
+      },
+      "extractedSummary": {
+        "tabelaI": {
+          "minimo": null
+        },
+        "tabelaIII": {
+          "certidao": null,
+          "reprografia": null
+        }
+      },
+      "differences": [],
+      "updatedAt": "2025-11-24T17:16:54.601Z"
+    },
+    "TRF5": {
+      "count": 1,
+      "ok": 1,
+      "fail": 0,
+      "sourcesStatus": [
+        {
+          "url": "https://custas.trf5.jus.br/custasinternet/paginas/principal/principal.faces",
+          "type": "calculator",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:16:54.601Z",
+          "finishedAt": "2025-11-24T17:16:56.516Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 60,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [
+          "JFCE-Fortaleza",
+          "JFPE-Recife",
+          "JFPB-João Pessoa",
+          "JFAL-Maceió",
+          "JFRN-Natal",
+          "JFSE-Aracaju"
+        ],
+        "updatedAt": "2025-11-24T17:16:56.517Z",
+        "observacoes": "Valores devem ser obtidos da Tabela Única de Custas do TRF5; padrão inicial aplicado. Tabela I: 1% base, mínimo R$ 60."
+      },
+      "extractedSummary": null,
+      "differences": [],
+      "updatedAt": "2025-11-24T17:16:56.518Z"
+    },
+    "TRF6": {
+      "count": 2,
+      "ok": 2,
+      "fail": 0,
+      "sourcesStatus": [
+        {
+          "url": "https://portal.trf6.jus.br/calculo-de-custas/custas-processuais/",
+          "type": "html",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:16:56.518Z",
+          "finishedAt": "2025-11-24T17:16:57.099Z"
+        },
+        {
+          "url": "https://portal.trf6.jus.br/wp-content/uploads/2024/03/Portaria-Presi-32-2022-TRF6.pdf",
+          "type": "pdf",
+          "status": 200,
+          "ok": true,
+          "startedAt": "2025-11-24T17:16:57.099Z",
+          "finishedAt": "2025-11-24T17:16:57.357Z"
+        }
+      ],
+      "configSummary": {
+        "ok": true,
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 60,
+          "maximo": null
+        },
+        "tabelaIIIUndefined": [],
+        "porteUndefined": [
+          "JFMG-Belo Horizonte",
+          "JFMG-Uberlândia",
+          "JFMG-Juiz de Fora"
+        ],
+        "updatedAt": "2025-11-24T17:16:57.360Z",
+        "observacoes": "Portarias do TRF6 definem valores e procedimentos; e-Proc integra emissão/controle. Tabela I: 1% base, mínimo R$ 60."
+      },
+      "extractedSummary": {
+        "tabelaI": {
+          "percentual": 0.01,
+          "minimo": 5
+        },
+        "tabelaIII": {
+          "certidao": 1.0641,
+          "reprografia": null
+        }
+      },
+      "differences": [
+        {
+          "field": "tabelaI.minimo",
+          "configured": 60,
+          "extracted": 5
+        },
+        {
+          "field": "tabelaIII.certidao",
+          "configured": 5,
+          "extracted": 1.0641
+        }
+      ],
+      "updatedAt": "2025-11-24T17:16:58.696Z"
+    }
+  }
+}

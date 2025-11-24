@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Drawer, Form, Input, Select, Space, Table, message } from 'antd'
+import { Button, Card, Drawer, Form, Input, Select, Space, Table } from 'antd'
 import ErrorBanner from '../../components/ErrorBanner'
 import { listarAdvogados, criarAdvogado, atualizarAdvogado, excluirAdvogado, listarEspecialidades, type Advogado, type Especialidade } from '../../services/api'
 import { useAsyncAction, useAsyncData } from '../../hooks/useAsync'

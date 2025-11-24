@@ -1,16 +1,22 @@
-import { Layout, Menu, theme, Typography, Space, Avatar, ConfigProvider, Switch, Spin } from 'antd'
+import { Layout, theme, Typography, Space, Avatar, ConfigProvider, Switch, Spin, Dropdown, Button } from 'antd'
 import {
   DashboardOutlined,
   SettingOutlined,
   TeamOutlined,
   UserOutlined,
-  ProfileOutlined,
-  SolutionOutlined,
   IdcardOutlined,
   ClusterOutlined,
   DollarOutlined,
+  CalculatorOutlined,
+  LineChartOutlined,
+  BarChartOutlined,
+  FileTextOutlined,
+  FileDoneOutlined,
+  SafetyCertificateOutlined,
+  EnvironmentOutlined,
+  DownOutlined,
 } from '@ant-design/icons'
-import { useMemo, useState, Suspense, lazy } from 'react'
+import { useMemo, useState, Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Parametros = lazy(() => import('./pages/Sistema/Parametros'))
@@ -26,6 +32,11 @@ const Login = lazy(() => import('./pages/Login'))
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
 import { useTranslation } from 'react-i18next'
+import './themes/blackgreen.css'
+import './themes/deepblue.css'
+import './themes/sunset.css'
+import './themes/lightmint.css'
+import './themes/monochrome.css'
 const Tributario = lazy(() => import('./pages/Calculos/Tributario'))
 const Previdenciario = lazy(() => import('./pages/Calculos/Previdenciario'))
 const Condenatorias = lazy(() => import('./pages/Calculos/Condenatorias'))
@@ -44,73 +55,150 @@ const { Header, Content } = Layout
 function App() {
   const { t } = useTranslation()
   const [dark, setDark] = useState(false)
+  const [themeName, setThemeName] = useState<'default' | 'blackgreen' | 'deepblue' | 'sunset' | 'lightmint' | 'monochrome'>('default')
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { colorBgContainer },
   } = theme.useToken()
   const location = useLocation()
   const navigate = useNavigate()
   const isLogin = location.pathname === '/login'
 
-  const selectedKey = useMemo(() => {
-    const path = location.pathname
-    if (path === '/') return 'dashboard'
-    return path
-  }, [location.pathname])
+  useMemo(() => location.pathname, [location.pathname])
+  useEffect(() => {
+    const classes = ['theme-blackgreen','theme-deepblue','theme-sunset','theme-lightmint','theme-monochrome']
+    classes.forEach(c => document.body.classList.remove(c))
+    if (themeName !== 'default') document.body.classList.add(`theme-${themeName}`)
+  }, [themeName])
 
-  const items = [
-    {
-      key: 'dashboard',
-      icon: <DashboardOutlined />,
-      label: t('menu.dashboard').toUpperCase(),
-      onClick: () => navigate('/'),
-    },
-    {
-      key: 'calculos',
-      icon: <SolutionOutlined />,
-      label: t('menu.calculos').toUpperCase(),
-      children: [
-        { key: '/calculos/tributario', icon: <SolutionOutlined />, label: t('menu.tributario').toUpperCase(), onClick: () => navigate('/calculos/tributario') },
-        { key: '/calculos/previdenciario', icon: <SolutionOutlined />, label: t('menu.previdenciario').toUpperCase(), onClick: () => navigate('/calculos/previdenciario') },
-        { key: '/calculos/condenatorias', icon: <SolutionOutlined />, label: t('menu.condenatorias').toUpperCase(), onClick: () => navigate('/calculos/condenatorias') },
-        { key: '/calculos/atualizacao', icon: <SolutionOutlined />, label: 'ATUALIZAÇÃO MONETÁRIA', onClick: () => navigate('/calculos/atualizacao') },
-      ],
-    },
-    {
-      key: 'custas',
-      icon: <DollarOutlined />,
-      label: t('menu.custas').toUpperCase(),
-      children: [
-        { key: '/custas/diretrizes-gerais', icon: <ProfileOutlined />, label: t('menu.custas_diretrizes').toUpperCase(), onClick: () => navigate('/custas/diretrizes-gerais') },
-        { key: '/custas/acoes-civeis-geral', icon: <ProfileOutlined />, label: t('menu.custas_acoes_civeis').toUpperCase(), onClick: () => navigate('/custas/acoes-civeis-geral') },
-        { key: '/custas/recursos-civeis', icon: <ProfileOutlined />, label: t('menu.custas_recursos_civeis').toUpperCase(), onClick: () => navigate('/custas/recursos-civeis') },
-        { key: '/custas/execucao', icon: <ProfileOutlined />, label: t('menu.custas_execucao').toUpperCase(), onClick: () => navigate('/custas/execucao') },
-        { key: '/custas/embargos-incidentes', icon: <ProfileOutlined />, label: t('menu.custas_embargos_incidentes').toUpperCase(), onClick: () => navigate('/custas/embargos-incidentes') },
-        { key: '/custas/mandados-servicos', icon: <ProfileOutlined />, label: t('menu.custas_mandados_servicos').toUpperCase(), onClick: () => navigate('/custas/mandados-servicos') },
-        { key: '/custas/acoes-penais', icon: <ProfileOutlined />, label: t('menu.custas_acoes_penais').toUpperCase(), onClick: () => navigate('/custas/acoes-penais') },
-        { key: '/custas/isencoes-gratuidade', icon: <ProfileOutlined />, label: t('menu.custas_isencoes_gratuidade').toUpperCase(), onClick: () => navigate('/custas/isencoes-gratuidade') },
-      ],
-    },
-    {
-      key: 'sistema',
-      icon: <SettingOutlined />,
-      label: t('menu.sistema').toUpperCase(),
-      children: [
-        { key: '/sistema/escritorios', icon: <ClusterOutlined />, label: t('menu.escritorios').toUpperCase(), onClick: () => navigate('/sistema/escritorios') },
-        { key: '/sistema/advogados', icon: <IdcardOutlined />, label: t('menu.advogados').toUpperCase(), onClick: () => navigate('/sistema/advogados') },
-        { key: '/sistema/clientes', icon: <TeamOutlined />, label: t('menu.clientes').toUpperCase(), onClick: () => navigate('/sistema/clientes') },
-        { key: '/sistema/causas-processos', icon: <SolutionOutlined />, label: t('menu.causas_processos').toUpperCase(), onClick: () => navigate('/sistema/causas-processos') },
-        { key: '/sistema/especialidades', icon: <ProfileOutlined />, label: t('menu.especialidades').toUpperCase(), onClick: () => navigate('/sistema/especialidades') },
-        { key: '/sistema/parametros', icon: <SettingOutlined />, label: t('menu.parametros').toUpperCase(), onClick: () => navigate('/sistema/parametros') },
-        { key: '/sistema/usuarios', icon: <UserOutlined />, label: t('menu.usuarios').toUpperCase(), onClick: () => navigate('/sistema/usuarios') },
-        { key: '/sistema/perfil', icon: <UserOutlined />, label: t('menu.perfil').toUpperCase(), onClick: () => navigate('/sistema/perfil') },
-        { key: '/sistema/permissoes', icon: <UserOutlined />, label: t('menu.permissoes').toUpperCase(), onClick: () => navigate('/sistema/permissoes') },
-      ],
-    },
+  const navCadastros = [
+    { key: '/sistema/escritorios', icon: <ClusterOutlined />, label: t('menu.escritorios').toUpperCase(), onClick: () => navigate('/sistema/escritorios') },
+    { key: '/sistema/advogados', icon: <IdcardOutlined />, label: t('menu.advogados').toUpperCase(), onClick: () => navigate('/sistema/advogados') },
+    { key: '/sistema/clientes', icon: <TeamOutlined />, label: t('menu.clientes').toUpperCase(), onClick: () => navigate('/sistema/clientes') },
+    { key: '/sistema/causas-processos', icon: <FileTextOutlined />, label: t('menu.causas_processos').toUpperCase(), onClick: () => navigate('/sistema/causas-processos') },
+    { key: '/sistema/especialidades', icon: <BarChartOutlined />, label: t('menu.especialidades').toUpperCase(), onClick: () => navigate('/sistema/especialidades') },
+  ]
+  const navCalculos = [
+    { key: '/calculos/tributario', icon: <DollarOutlined />, label: t('menu.tributario').toUpperCase(), onClick: () => navigate('/calculos/tributario') },
+    { key: '/calculos/previdenciario', icon: <SafetyCertificateOutlined />, label: t('menu.previdenciario').toUpperCase(), onClick: () => navigate('/calculos/previdenciario') },
+    { key: '/calculos/condenatorias', icon: <FileDoneOutlined />, label: t('menu.condenatorias').toUpperCase(), onClick: () => navigate('/calculos/condenatorias') },
+    { key: '/calculos/atualizacao', icon: <LineChartOutlined />, label: 'ATUALIZAÇÃO MONETÁRIA', onClick: () => navigate('/calculos/atualizacao') },
+  ]
+  const navCustas = [
+    { key: '/custas/diretrizes-gerais', icon: <FileTextOutlined />, label: t('menu.custas_diretrizes').toUpperCase(), onClick: () => navigate('/custas/diretrizes-gerais') },
+    { key: '/custas/acoes-civeis-geral', icon: <FileTextOutlined />, label: t('menu.custas_acoes_civeis').toUpperCase(), onClick: () => navigate('/custas/acoes-civeis-geral') },
+    { key: '/custas/recursos-civeis', icon: <FileTextOutlined />, label: t('menu.custas_recursos_civeis').toUpperCase(), onClick: () => navigate('/custas/recursos-civeis') },
+    { key: '/custas/execucao', icon: <FileTextOutlined />, label: t('menu.custas_execucao').toUpperCase(), onClick: () => navigate('/custas/execucao') },
+    { key: '/custas/embargos-incidentes', icon: <FileTextOutlined />, label: t('menu.custas_embargos_incidentes').toUpperCase(), onClick: () => navigate('/custas/embargos-incidentes') },
+    { key: '/custas/mandados-servicos', icon: <EnvironmentOutlined />, label: t('menu.custas_mandados_servicos').toUpperCase(), onClick: () => navigate('/custas/mandados-servicos') },
+    { key: '/custas/acoes-penais', icon: <FileTextOutlined />, label: t('menu.custas_acoes_penais').toUpperCase(), onClick: () => navigate('/custas/acoes-penais') },
+    { key: '/custas/isencoes-gratuidade', icon: <FileDoneOutlined />, label: t('menu.custas_isencoes_gratuidade').toUpperCase(), onClick: () => navigate('/custas/isencoes-gratuidade') },
+  ]
+  const navSistema = [
+    { key: '/sistema/usuarios', icon: <UserOutlined />, label: t('menu.usuarios').toUpperCase(), onClick: () => navigate('/sistema/usuarios') },
+    { key: '/sistema/perfil', icon: <UserOutlined />, label: t('menu.perfil').toUpperCase(), onClick: () => navigate('/sistema/perfil') },
+    { key: '/sistema/permissoes', icon: <UserOutlined />, label: t('menu.permissoes').toUpperCase(), onClick: () => navigate('/sistema/permissoes') },
+    { key: '/sistema/parametros', icon: <SettingOutlined />, label: t('menu.parametros').toUpperCase(), onClick: () => navigate('/sistema/parametros') },
+    { key: 'temas', label: 'TEMAS', children: [
+      { key: 'theme-default', label: 'PADRÃO', onClick: () => { setThemeName('default'); setDark(false) } },
+      { key: 'theme-blackgreen', label: 'BLACKGREEN', onClick: () => { setThemeName('blackgreen'); setDark(true) } },
+      { key: 'theme-deepblue', label: 'DEEPBLUE', onClick: () => { setThemeName('deepblue'); setDark(true) } },
+      { key: 'theme-sunset', label: 'SUNSET', onClick: () => { setThemeName('sunset'); setDark(false) } },
+      { key: 'theme-lightmint', label: 'LIGHTMINT', onClick: () => { setThemeName('lightmint'); setDark(false) } },
+      { key: 'theme-monochrome', label: 'MONOCHROME', onClick: () => { setThemeName('monochrome'); setDark(true) } },
+    ]},
   ]
 
   return (
     <AuthProvider>
-      <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
+      <ConfigProvider
+        theme={{
+          algorithm: (() => {
+            switch (themeName) {
+              case 'blackgreen':
+              case 'deepblue':
+              case 'monochrome':
+                return theme.darkAlgorithm
+              case 'sunset':
+              case 'lightmint':
+              default:
+                return theme.defaultAlgorithm
+            }
+          })(),
+          token: (() => {
+            switch (themeName) {
+              case 'blackgreen':
+                return {
+                  colorPrimary: '#00f0ff',
+                  colorInfo: '#00f0ff',
+                  colorLink: '#00f0ff',
+                  colorBgLayout: '#000000',
+                  colorBgContainer: '#0a0a0a',
+                  colorText: '#f0f0f0',
+                  colorTextSecondary: '#bdbdbd',
+                  borderRadius: 10,
+                  controlOutline: '#00f0ff',
+                }
+              case 'deepblue':
+                return {
+                  colorPrimary: '#3b82f6',
+                  colorInfo: '#3b82f6',
+                  colorLink: '#60a5fa',
+                  colorBgLayout: '#0b1220',
+                  colorBgContainer: '#0f172a',
+                  colorText: '#e5e7eb',
+                  colorTextSecondary: '#94a3b8',
+                  borderRadius: 10,
+                  controlOutline: '#60a5fa',
+                }
+              case 'sunset':
+                return {
+                  colorPrimary: '#fb7185',
+                  colorInfo: '#fb7185',
+                  colorLink: '#f97316',
+                  colorBgLayout: '#fff7ed',
+                  colorBgContainer: '#fff1f2',
+                  colorText: '#1f2937',
+                  colorTextSecondary: '#6b7280',
+                  borderRadius: 12,
+                  controlOutline: '#f97316',
+                }
+              case 'lightmint':
+                return {
+                  colorPrimary: '#10b981',
+                  colorInfo: '#10b981',
+                  colorLink: '#14b8a6',
+                  colorBgLayout: '#f0fdfa',
+                  colorBgContainer: '#ecfeff',
+                  colorText: '#0f172a',
+                  colorTextSecondary: '#334155',
+                  borderRadius: 10,
+                  controlOutline: '#14b8a6',
+                }
+              case 'monochrome':
+                return {
+                  colorPrimary: '#9ca3af',
+                  colorInfo: '#9ca3af',
+                  colorLink: '#9ca3af',
+                  colorBgLayout: '#0f0f0f',
+                  colorBgContainer: '#171717',
+                  colorText: '#e5e5e5',
+                  colorTextSecondary: '#a3a3a3',
+                  borderRadius: 8,
+                  controlOutline: '#737373',
+                }
+              default:
+                return {
+                  colorPrimary: '#0E5E3E',
+                  colorInfo: '#0E5E3E',
+                  colorLink: '#0E5E3E',
+                  borderRadius: 6,
+                  colorBgLayout: '#ffffff',
+                  colorBgContainer: '#ffffff',
+                }
+            }
+          })(),
+        }}
+      >
         {isLogin ? (
           <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}><Spin /></div>}>
             <Routes>
@@ -119,9 +207,24 @@ function App() {
           </Suspense>
         ) : (
           <Layout style={{ minHeight: '100vh' }}>
-            <Header style={{ paddingInline: 16, background: colorBgContainer }}>
+            <Header style={{ paddingInline: 16, background: themeName === 'blackgreen' ? '#000' : colorBgContainer }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography.Title level={4} style={{ margin: 0 }}>{t('header.title')}</Typography.Title>
+                <Space>
+                  <Typography.Title level={4} style={{ margin: 0 }}>{t('header.title')}</Typography.Title>
+                  <Button type="text" icon={<DashboardOutlined />} onClick={() => navigate('/')}>DASHBOARD</Button>
+                  <Dropdown menu={{ items: navCadastros }}>
+                    <Button type="text" icon={<IdcardOutlined />}>CADASTROS <DownOutlined /></Button>
+                  </Dropdown>
+                  <Dropdown menu={{ items: navCalculos }}>
+                    <Button type="text" icon={<CalculatorOutlined />}>{t('menu.calculos').toUpperCase()} <DownOutlined /></Button>
+                  </Dropdown>
+                  <Dropdown menu={{ items: navCustas }}>
+                    <Button type="text" icon={<DollarOutlined />}>{t('menu.custas').toUpperCase()} <DownOutlined /></Button>
+                  </Dropdown>
+                  <Dropdown menu={{ items: navSistema }}>
+                    <Button type="text" icon={<SettingOutlined />}>{t('menu.sistema').toUpperCase()} <DownOutlined /></Button>
+                  </Dropdown>
+                </Space>
                 <Space>
                   <Avatar size="small" icon={<UserOutlined />} />
                   <Typography.Text>{t('header.user')}</Typography.Text>
@@ -129,18 +232,7 @@ function App() {
                 </Space>
               </div>
             </Header>
-
-            <Header style={{ background: colorBgContainer }}>
-              <Menu
-                mode="horizontal"
-                selectedKeys={[selectedKey]}
-                items={items as any}
-                style={{ borderBottom: 0 }}
-              />
-            </Header>
-
-            <Content style={{ margin: '16px' }}>
-              <div style={{ padding: 24, minHeight: 360, background: colorBgContainer, borderRadius: borderRadiusLG }}>
+              <Content style={{ margin: 0, padding: 16, background: themeName === 'blackgreen' ? '#000' : '#fff' }}>
                 <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}><Spin /></div>}>
                   <Routes>
                     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -167,8 +259,7 @@ function App() {
                     <Route path="/custas/isencoes-gratuidade" element={<ProtectedRoute><IsencoesGratuidade /></ProtectedRoute>} />
                   </Routes>
                 </Suspense>
-              </div>
-            </Content>
+              </Content>
           </Layout>
         )}
       </ConfigProvider>

@@ -6,7 +6,7 @@ services:
     container_name: CJF-POSTGRESQL
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "54321:5432"
     environment:
       POSTGRES_DB: CJF
       POSTGRES_USER: cjf

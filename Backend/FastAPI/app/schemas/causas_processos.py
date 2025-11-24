@@ -11,6 +11,7 @@ class CausaProcessoBase(UppercaseModel):
     advogado_id: Optional[int] = None
     escritorio_id: Optional[int] = None
     especialidade_id: Optional[int] = None
+    valor: Optional[float] = None
 
 
 class CausaProcessoCreate(CausaProcessoBase):
@@ -30,3 +31,4 @@ class CausaProcessoUpdate(UppercaseModel):
     advogado_id: Optional[int] = None
     escritorio_id: Optional[int] = None
     especialidade_id: Optional[int] = None
+    valor: Optional[float] = None

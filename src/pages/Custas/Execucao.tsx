@@ -1,4 +1,6 @@
-import { Card, Form, InputNumber, Table, Button, Row, Col, Typography, Switch } from 'antd'
+import { Card, Form, Table, Button, Row, Col, Typography, Switch, InputNumber } from 'antd'
+// MoneyInput não é utilizado diretamente nesta tela
+import InfoTooltip from '../../components/InfoTooltip'
 import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { calcularCustas } from '../../utils/custas'
@@ -39,7 +41,13 @@ export default function Execucao() {
   }
 
   return (
-    <Card title={t('pages.custas.execucao.title')}>
+    <Card title={<>
+      {t('pages.custas.execucao.title')}
+      <InfoTooltip content={<>
+        <div>Taxa de execução e atos de penhora/avaliação conforme Tabela III.</div>
+        <div>Base regional: `src/data/custas/sources.ts`.</div>
+      </>} />
+    </>}>
       <Form form={form} layout="vertical" initialValues={{}}>
         <Row gutter={[16,16]}>
           <Col xs={24} md={8}>
@@ -92,6 +100,14 @@ export default function Execucao() {
         pagination={false}
       />
       <Typography.Paragraph><b>{t('pages.custas.fields.total')}:</b> {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography.Paragraph>
+      <Card title="Ajuda" style={{ marginTop: 12 }}>
+        <Typography.Paragraph>
+          Itens de execução (Tabela I e III) variam por região; ver `src/data/custas/*`.
+        </Typography.Paragraph>
+        <Typography.Paragraph>
+          Regras de cálculo: `src/utils/custas.ts`.
+        </Typography.Paragraph>
+      </Card>
     </Card>
   )
 }

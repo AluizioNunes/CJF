@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..database import get_db
 from ..models.causas_processos import CausaProcesso
 from ..schemas.causas_processos import CausaProcessoCreate, CausaProcessoRead, CausaProcessoUpdate
@@ -41,6 +42,7 @@ def update_causa(row_id: int, payload: CausaProcessoUpdate, db: Session = Depend
         "advogado_id": row.advogado_id,
         "escritorio_id": row.escritorio_id,
         "especialidade_id": row.especialidade_id,
+        "valor": float(row.valor) if row.valor is not None else None,
     }
     data = upper_except_email(payload.model_dump(exclude_unset=True))
     for k, v in data.items():
@@ -65,9 +67,20 @@ def delete_causa(row_id: int, db: Session = Depends(get_db)) -> Dict[str, str]:
         "advogado_id": row.advogado_id,
         "escritorio_id": row.escritorio_id,
         "especialidade_id": row.especialidade_id,
+        "valor": float(row.valor) if row.valor is not None else None,
     }
     db.delete(row)
     db.commit()
     db.add(Auditoria(entidade="CausasProcessos", entidade_id=row_id, acao="delete", quem="SYSTEM", diff=build_diff(before, None)))
     db.commit()
     return {"status": "deleted"}
+
+
+@router.get("/sum", summary="Somar valores de causas")
+def sum_valores_causas(db: Session = Depends(get_db)) -> Dict[str, float]:
+    total = db.query(func.coalesce(func.sum(CausaProcesso.valor), 0)).scalar() or 0
+    try:
+        total_num = float(total)
+    except Exception:
+        total_num = 0.0
+    return {"total": total_num}

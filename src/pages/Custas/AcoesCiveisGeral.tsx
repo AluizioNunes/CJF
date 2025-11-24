@@ -1,4 +1,6 @@
-import { Card, Form, InputNumber, Table, Button, Row, Col, Space, Typography, Switch } from 'antd'
+import { Card, Form, Table, Button, Row, Col, Space, Typography, Switch, InputNumber } from 'antd'
+import MoneyInput from '../../components/MoneyInput'
+import InfoTooltip from '../../components/InfoTooltip'
 import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { calcularCustas } from '../../utils/custas'
@@ -40,19 +42,34 @@ export default function AcoesCiveisGeral() {
   }
 
   return (
-    <Card title={t('pages.custas.acoesCiveis.title')}>
+    <Card title={<>
+      {t('pages.custas.acoesCiveis.title')}
+      <InfoTooltip
+        title="Custas Processuais"
+        content={<>
+          <div>Tabela I/III, porte de remessa/retorno e isenções variam por TRF; dados serão populados conforme fontes.</div>
+          <div>Fontes: `src/data/custas/sources.ts`.</div>
+        </>}
+      />
+    </>}>
       <Form form={form} layout="vertical" initialValues={{}}>
         <Row gutter={[16,16]}>
           <Col xs={24} md={8}>
             <Form.Item name="valorCausa" label={t('pages.custas.fields.valorCausa')} rules={[{ required: true }]}> 
-              <InputNumber min={0} style={{ width: '100%' }} prefix="R$" precision={2} />
+              <MoneyInput min={0} precision={2} />
             </Form.Item>
           </Col>
           <Col xs={24} md={16}>
             {rules.map((r) => (
               <Row key={r.id} gutter={8} align="middle">
                 <Col flex="auto">
-                  <Typography.Text>{r.label}</Typography.Text>
+                  <Typography.Text>
+                    {r.label}
+                    <InfoTooltip content={<>
+                      <div>Regra: {r.tipo === 'percentual' ? 'percentual' : r.tipo}</div>
+                      <div>Min/Max aplicados quando definidos.</div>
+                    </>} />
+                  </Typography.Text>
                 </Col>
                 <Col>
                   <Form.Item name={`q_${r.id}`} label={t('pages.custas.fields.quantidade')} initialValue={1}>
@@ -88,6 +105,14 @@ export default function AcoesCiveisGeral() {
         pagination={false}
       />
       <Typography.Paragraph><b>{t('pages.custas.fields.total')}:</b> {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography.Paragraph>
+      <Card title="Ajuda" style={{ marginTop: 12 }}>
+        <Typography.Paragraph>
+          Tabela I/III, porte e isenções variam por TRF; configuração regional em `src/data/custas/*`.
+        </Typography.Paragraph>
+        <Typography.Paragraph>
+          Regras de cálculo: `src/utils/custas.ts`. Fontes regionais: `src/data/custas/sources.ts`.
+        </Typography.Paragraph>
+      </Card>
     </Card>
   )
 }

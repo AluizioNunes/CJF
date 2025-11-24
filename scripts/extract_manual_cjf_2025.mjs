@@ -2,24 +2,16 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-// Use legacy build for Node.js
-import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 async function extractText(pdfPath) {
-  const data = new Uint8Array(fs.readFileSync(pdfPath))
-  const loadingTask = pdfjsLib.getDocument({ data })
-  const pdf = await loadingTask.promise
-  let fullText = ''
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum)
-    const content = await page.getTextContent()
-    const strings = content.items.map((item) => item.str)
-    fullText += `\n\n=== Página ${pageNum} ===\n` + strings.join(' ')
-  }
-  return fullText
+  const mod = await import('pdf-parse/node')
+  const pdfParse = mod.default || mod
+  const dataBuffer = fs.readFileSync(pdfPath)
+  const data = await pdfParse(dataBuffer)
+  return data.text
 }
 
 async function main() {
@@ -34,7 +26,7 @@ async function main() {
     fs.writeFileSync(outPath, text, 'utf8')
     console.log('Extração concluída. Arquivo gerado em:', outPath)
   } catch (err) {
-    console.error('Falha ao extrair texto do PDF via pdfjs-dist:', err)
+    console.error('Falha ao extrair texto do PDF:', err)
     process.exit(1)
   }
 }

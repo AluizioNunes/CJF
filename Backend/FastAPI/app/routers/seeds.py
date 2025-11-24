@@ -67,6 +67,13 @@ def _get_or_create_processo(db: Session, data: Dict[str, str | int | None]) -> C
     numero_u = (data.get("numero") or "").upper()
     row = db.query(CausaProcesso).filter(CausaProcesso.numero == numero_u).first()
     if row:
+        if data.get("valor") is not None:
+            try:
+                row.valor = data.get("valor")  # type: ignore
+                db.commit()
+                db.refresh(row)
+            except Exception:
+                pass
         return row
     row = CausaProcesso(
         numero=numero_u,
@@ -76,6 +83,7 @@ def _get_or_create_processo(db: Session, data: Dict[str, str | int | None]) -> C
         advogado_id=(data.get("advogado_id") or None),
         escritorio_id=(data.get("escritorio_id") or None),
         especialidade_id=(data.get("especialidade_id") or None),
+        valor=(data.get("valor") or None),
     )
     db.add(row)
     db.commit()
@@ -249,7 +257,9 @@ def seed_demo(db: Session = Depends(get_db)) -> Dict[str, object]:
         {"numero": "000005-90.2024.4.00.0005", "descricao": "CONFLITOS – MEDIAÇÃO", "status": "ACORDO", "cliente_id": cliente_ids[4], "advogado_id": list(adv_id_to_office_id.keys())[4], "escritorio_id": adv_id_to_office_id[list(adv_id_to_office_id.keys())[4]], "especialidade_id": esp_id_by_name.get("RESOLUÇÃO DE CONFLITOS")},
         {"numero": "000006-11.2024.4.00.0006", "descricao": "DANO AMBIENTAL", "status": "EM ANDAMENTO", "cliente_id": cliente_ids[3], "advogado_id": list(adv_id_to_office_id.keys())[5], "escritorio_id": adv_id_to_office_id[list(adv_id_to_office_id.keys())[5]], "especialidade_id": esp_id_by_name.get("DIREITO AMBIENTAL")},
     ]
-    for p in processos_data:
+    import random
+    for idx, p in enumerate(processos_data, start=1):
+        p["valor"] = round(random.uniform(5000, 50000), 2)
         _ = _get_or_create_processo(db, p)
         created["causas_processos"] += 1
 

@@ -119,7 +119,7 @@ export type BaseTemporal = 'mensal' | 'diaria'
 export type RegraMarcoJuros = {
   de?: Date
   ate?: Date
-  metodo: 'simples' | 'composto' | 'selic' | 'nenhum'
+  metodo: 'simples' | 'composto' | 'selic' | 'legal' | 'nenhum'
   taxaMensalPercent?: number
 }
 
@@ -192,7 +192,7 @@ function obterTaxaDeJurosParaMes(
   regime: RegraMarcoJuros[] | undefined,
   defaultTaxa: number,
   defaultMetodo: 'simples' | 'composto' | 'selic' | 'nenhum'
-): { taxa: number; metodo: 'simples' | 'composto' | 'selic' | 'nenhum' } {
+): { taxa: number; metodo: 'simples' | 'composto' | 'selic' | 'legal' | 'nenhum' } {
   if (!regime || regime.length === 0) return { taxa: defaultTaxa, metodo: defaultMetodo }
   const d = mes
   for (const r of regime) {
@@ -242,6 +242,10 @@ export function calcularDetalhadoMensal(
     const fracao = opts.base === 'diaria' ? fracaoMes(opts.inicio, opts.fim, mes) : 1
     const indicePercent = indicePercentBruto * fracao
     let jurosPercent = regimeMes.metodo === 'selic' ? (selicMap.get(k) ?? 0) * fracao : (regimeMes.taxa * fracao)
+    if (regimeMes.metodo === 'legal') {
+      const selicMes = (selicMap.get(k) ?? 0) * fracao
+      jurosPercent = Math.max(0, selicMes - indicePercent)
+    }
 
     // Correção monetária (aplica no principal SEM juros)
     const fatorIndiceMes = 1 + indicePercent / 100
@@ -259,7 +263,7 @@ export function calcularDetalhadoMensal(
       // fator de juros acumulado aqui é calculado sobre base inicial equivalente
       // aproximamos por 1 + (jurosAcumulado / valorInicial)
       fatorJurosAcum = 1 + (jurosAcumulado / valorInicial)
-    } else if (regimeMes.metodo === 'composto' || regimeMes.metodo === 'selic') {
+    } else if (regimeMes.metodo === 'composto' || regimeMes.metodo === 'selic' || regimeMes.metodo === 'legal') {
       // Primeiro aplica correção no valor final acumulado, depois os juros compostos
       const valorAntesJuro = valorFinalAcum * fatorIndiceMes
       const incrementoJuro = valorAntesJuro * (jurosPercent / 100)

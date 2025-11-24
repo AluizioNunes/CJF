@@ -1,0 +1,112 @@
+/* Tidal-like dark style overrides */
+.theme-blackgreen {
+  --accent: #00f0ff;
+  background-color: #000;
+}
+
+.theme-blackgreen .ant-typography,
+.theme-blackgreen .ant-menu,
+.theme-blackgreen .ant-table,
+.theme-blackgreen .ant-form,
+.theme-blackgreen .ant-input,
+.theme-blackgreen .ant-select,
+.theme-blackgreen .ant-radio,
+.theme-blackgreen .ant-switch {
+  color: #f0f0f0;
+}
+
+.theme-blackgreen .ant-card {
+  background: #111 !important;
+  border-color: #1f1f1f !important;
+}
+
+.theme-blackgreen .ant-dropdown-menu,
+.theme-blackgreen .ant-select-dropdown {
+  background: #0a0a0a !important;
+  border-color: #1f1f1f !important;
+}
+
+.theme-blackgreen .ant-btn {
+  border-radius: 999px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  transition: background-color .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.theme-blackgreen .ant-btn-text {
+  color: #f0f0f0;
+}
+.theme-blackgreen .ant-btn-text:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.theme-blackgreen a {
+  color: var(--accent);
+  transition: color .15s ease;
+}
+.theme-blackgreen a:hover {
+  color: #66f6ff;
+}
+
+.theme-blackgreen .ant-input,
+.theme-blackgreen .ant-select-selector,
+.theme-blackgreen .ant-input-number,
+.theme-blackgreen .ant-picker {
+  background: #0f0f0f !important;
+  border-color: #1f1f1f !important;
+  color: #f0f0f0 !important;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.theme-blackgreen .ant-table-thead > tr > th {
+  background: #0f0f0f !important;
+}
+.theme-blackgreen .ant-table-tbody > tr > td {
+  border-color: #1f1f1f !important;
+}
+
+.theme-blackgreen .ant-switch-checked {
+  background: var(--accent) !important;
+}
+
+.theme-blackgreen .ant-radio-wrapper .ant-radio-checked .ant-radio-inner,
+.theme-blackgreen .ant-checkbox-checked .ant-checkbox-inner {
+  border-color: var(--accent) !important;
+  background-color: var(--accent) !important;
+}
+
+.theme-blackgreen .ant-select-item-option-selected {
+  background: #0f0f0f !important;
+}
+
+/* Headline typography for titles */
+.theme-blackgreen .ant-typography h1,
+.theme-blackgreen .ant-typography h2,
+.theme-blackgreen .ant-typography h3,
+.theme-blackgreen .ant-card-head-title {
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+}
+
+/* Dropdown smooth motion (slide-up) */
+.theme-blackgreen .ant-slide-up-enter,
+.theme-blackgreen .ant-slide-up-appear {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.theme-blackgreen .ant-slide-up-enter-active,
+.theme-blackgreen .ant-slide-up-appear-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+/* Neon focus ring */
+.theme-blackgreen .ant-input:focus,
+.theme-blackgreen .ant-select-focused .ant-select-selector,
+.theme-blackgreen .ant-input-number-focused,
+.theme-blackgreen .ant-picker-focused {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.2) !important;
+}

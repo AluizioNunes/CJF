@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Col, DatePicker, Form, InputNumber, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
+import { Button, Card, Col, DatePicker, Form, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
 import { fetchIpcaeSerieCached } from '../../services/ibge'
 import { calcularComIndicesEJuros, calcularDetalhadoMensal } from '../../utils/calculo'
 import type { RegraMarcoJuros } from '../../utils/calculo'
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useParametros } from '../../context/ParamsContext'
 import dayjs from 'dayjs'
 import { listarClientes, listarCausasProcessos, type Cliente, type CausaProcesso } from '../../services/api'
+import InfoTooltip from '../../components/InfoTooltip'
 
 export default function Condenatorias() {
   const { t } = useTranslation()
@@ -35,19 +36,7 @@ export default function Condenatorias() {
     load()
   }, [])
 
-  const loadPreset = (key: string) => {
-    try {
-      const raw = localStorage.getItem(key)
-      if (!raw) return null
-      const p = JSON.parse(raw)
-      return {
-        ...p,
-        inicioPeriodo: p.inicioPeriodo ? dayjs(p.inicioPeriodo) : undefined,
-        fimPeriodo: p.fimPeriodo ? dayjs(p.fimPeriodo) : undefined,
-        dataAjuizamento: p.dataAjuizamento ? dayjs(p.dataAjuizamento) : undefined,
-      }
-    } catch { return null }
-  }
+  
 
   const savePreset = (scope: 'processo' | 'cliente') => {
     const values = form.getFieldsValue()
@@ -73,24 +62,7 @@ export default function Condenatorias() {
     localStorage.setItem(key, JSON.stringify(payload))
   }
 
-  const prefillFromSelection = (procId?: number, cliId?: number) => {
-    let preset = procId ? loadPreset(`cjf:calc_preset:condenatorias:processo:${procId}`) : null
-    if (!preset && cliId) preset = loadPreset(`cjf:calc_preset:condenatorias:cliente:${cliId}`)
-    if (!preset) {
-      preset = {
-        valorInicial: 10000,
-        inicioPeriodo: dayjs().subtract(6, 'month'),
-        fimPeriodo: dayjs(),
-        jurosMensais: regras?.jurosPadrao?.taxaMensalPercent ?? 1.0,
-        metodoJuros: regras?.jurosPadrao?.metodo ?? 'simples',
-        usarMarcos: regras?.usarMarcos ?? false,
-        baseTemporal: regras?.baseTemporal ?? 'mensal',
-        arredondamento: regras?.arredondamento ?? 'mensal',
-        mostrarDetalhe: true,
-      }
-    }
-    form.setFieldsValue(preset)
-  }
+  
 
   const onCalculate = async () => {
     const values = form.getFieldsValue()
@@ -122,12 +94,21 @@ export default function Condenatorias() {
       ])
 
       if (values.mostrarDetalhe) {
-        const regime: RegraMarcoJuros[] | undefined = usarMarcos && dataAjuiz
-          ? [
-              { ate: new Date(dataAjuiz.getFullYear(), dataAjuiz.getMonth(), 1), metodo: 'simples', taxaMensalPercent: jurosAntes },
-              { de: new Date(dataAjuiz.getFullYear(), dataAjuiz.getMonth(), 1), metodo: metodoDepois, taxaMensalPercent: jurosDepois },
-            ]
-          : undefined
+        let regime: RegraMarcoJuros[] | undefined
+        const SEP_2024 = new Date(2024, 8, 1)
+        if (fim >= SEP_2024) {
+          regime = [
+            { ate: new Date(2024, 7, 1), metodo: 'simples', taxaMensalPercent: jurosAntes || jurosMensais },
+            { de: SEP_2024, metodo: 'legal' },
+          ]
+        } else if (usarMarcos && dataAjuiz) {
+          regime = [
+            { ate: new Date(dataAjuiz.getFullYear(), dataAjuiz.getMonth(), 1), metodo: 'simples', taxaMensalPercent: jurosAntes },
+            { de: new Date(dataAjuiz.getFullYear(), dataAjuiz.getMonth(), 1), metodo: metodoDepois, taxaMensalPercent: jurosDepois },
+          ]
+        } else {
+          regime = undefined
+        }
         const detalhado = calcularDetalhadoMensal(valorInicial, {
           inicio,
           fim,
@@ -149,7 +130,16 @@ export default function Condenatorias() {
   return (
     <Row gutter={[16,16]}>
       <Col xs={24} md={12}>
-        <Card title={t('pages.calculos.condenatorias.title')}>
+        <Card title={<>
+          {t('pages.calculos.condenatorias.title')}
+          <InfoTooltip
+            title="Condenatórias/Desapropriação"
+            content={<>
+              <div>IPCA-E + juros até 11/2021 para Fazenda; SELIC a partir de 12/2021. Particulares: IPCA-15 + taxa legal a partir de 09/2024.</div>
+              <div>Referências: linhas 1552–1566, 1596–1600 e 2186–2190.</div>
+            </>}
+          />
+        </>}>
           <Form form={form} layout="vertical" initialValues={{
             metodoJuros: regras?.jurosPadrao?.metodo ?? 'simples',
             jurosMensais: regras?.jurosPadrao?.taxaMensalPercent ?? undefined,
@@ -164,7 +154,11 @@ export default function Condenatorias() {
                   <Select
                     allowClear showSearch optionFilterProp="label"
                     value={clienteId}
-                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); prefillFromSelection(undefined, v) }}
+                    onChange={(v) => {
+                      setClienteId(v)
+                      setProcessoId(undefined)
+                      form.setFieldsValue({ valorInicial: undefined, inicioPeriodo: undefined, fimPeriodo: dayjs() })
+                    }}
                     options={(Array.isArray(clientes) ? clientes : []).map(c => ({ label: c.nome, value: c.id }))}
                   />
                 </Form.Item>
@@ -174,7 +168,16 @@ export default function Condenatorias() {
                   <Select
                     allowClear showSearch optionFilterProp="label"
                     value={processoId}
-                    onChange={(v) => { setProcessoId(v); prefillFromSelection(v, clienteId) }}
+                    disabled={!clienteId}
+                    onChange={(v) => {
+                      setProcessoId(v)
+                      const p = (processos || []).find(x => x.id === v)
+                      form.setFieldsValue({
+                        valorInicial: p?.valor ?? undefined,
+                        inicioPeriodo: p?.dataDistribuicao ? dayjs(p.dataDistribuicao) : undefined,
+                        fimPeriodo: dayjs(),
+                      })
+                    }}
                     options={(Array.isArray(processos) ? processos : [])
                       .filter(p => !clienteId || p.cliente_id === clienteId)
                       .map(p => ({ label: `${p.numero}${p.descricao ? ' - ' + p.descricao : ''}`, value: p.id }))}
@@ -187,13 +190,13 @@ export default function Condenatorias() {
               <Button onClick={() => savePreset('cliente')} disabled={!clienteId}>Salvar parâmetros padrão do cliente</Button>
             </Space>
             <Form.Item name="valorInicial" label={t('pages.calculos.fields.valorInicial')} rules={[{ required: true }]}> 
-              <InputNumber min={0} style={{ width: '100%' }} prefix="R$" precision={2} />
+              <MoneyInput min={0} precision={2} disabled={!processoId} />
             </Form.Item>
             <Form.Item name="inicioPeriodo" label={t('pages.calculos.fields.inicioPeriodo')} rules={[{ required: true }]}> 
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
             <Form.Item name="fimPeriodo" label={t('pages.calculos.fields.fimPeriodo')} rules={[{ required: true }]}> 
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" value={dayjs()} />
             </Form.Item>
             <Form.Item name="preset" label={t('pages.calculos.fields.presetJuros')}>
               <Select
@@ -210,33 +213,56 @@ export default function Condenatorias() {
               />
             </Form.Item>
             <Form.Item name="jurosMensais" label={t('pages.calculos.fields.jurosMensais')}> 
-              <InputNumber min={0} style={{ width: '100%' }} suffix="%" precision={4} />
+              <PercentInput min={0} precision={4} />
             </Form.Item>
-            <Form.Item name="metodoJuros" label={t('pages.calculos.fields.metodoJuros')}>
+            <Form.Item name="metodoJuros" label={<>
+              {t('pages.calculos.fields.metodoJuros')}
+              <InfoTooltip content={<>
+                <div>Simples vs composto conforme regime; taxa legal aplica SELIC deduzida do IPCA-15.</div>
+                <div>Implementação: `src/utils/calculo.ts:116-125, 262-272`.</div>
+              </>} />
+            </>}>
               <Radio.Group disabled={modoEstrito}>
                 <Radio value="simples">Simples</Radio>
                 <Radio value="composto">Composto</Radio>
               </Radio.Group>
             </Form.Item>
-            <Form.Item label={t('pages.calculos.fields.usarMarcos')} name="usarMarcos" valuePropName="checked">
+            <Form.Item label={<>
+              {t('pages.calculos.fields.usarMarcos')}
+              <InfoTooltip content={<>
+                <div>Permite dividir o período por um marco (ajuizamento/citação/sentença) com regimes distintos.</div>
+              </>} />
+            </>} name="usarMarcos" valuePropName="checked">
               <Switch disabled={modoEstrito} />
             </Form.Item>
             <Row gutter={8}>
               <Col span={12}>
-                <Form.Item name="dataAjuizamento" label={t('pages.calculos.fields.dataAjuizamento')}>
+                <Form.Item name="dataAjuizamento" label={<>
+                  {t('pages.calculos.fields.dataAjuizamento')}
+                  <InfoTooltip content={<>
+                    <div>Data do marco processual escolhido; usada para transição de juros.</div>
+                  </>} />
+                </>}>
                   <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="jurosAntesPercent" label={t('pages.calculos.fields.jurosAntes')}>
-                  <InputNumber min={0} style={{ width: '100%' }} suffix="%" precision={4} disabled={modoEstrito} />
+                  <PercentInput min={0} precision={4} disabled={modoEstrito} />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={8}>
+              <Col span={12}>
+                <Form.Item name="marcoTipo" label="Marco temporal">
+                  <Select options={[{ value: 'ajuizamento', label: 'Ajuizamento' }, { value: 'citacao', label: 'Citação' }, { value: 'sentenca', label: 'Sentença' }]} />
                 </Form.Item>
               </Col>
             </Row>
             <Row gutter={8}>
               <Col span={12}>
                 <Form.Item name="jurosDepoisPercent" label={t('pages.calculos.fields.jurosDepois')}>
-                  <InputNumber min={0} style={{ width: '100%' }} suffix="%" precision={4} disabled={modoEstrito} />
+                  <PercentInput min={0} precision={4} disabled={modoEstrito} />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -313,7 +339,20 @@ export default function Condenatorias() {
             IPCA-E (SIDRA 7060, variável 63). Juros configuráveis.
           </Typography.Paragraph>
         </Card>
+        <Card title="Ajuda" style={{ marginTop: 12 }}>
+          <Typography.Paragraph>
+            Fazenda: IPCA-E + juros até 11/2021; SELIC a partir de 12/2021. Particular: IPCA-15 + taxa legal desde 09/2024.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Séries: IPCA-E `src/services/ibge.ts:49-53`; SELIC `src/services/bcb.ts:32-44`. Núcleo: `src/utils/calculo.ts:37-40, 116-125, 220-305`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Manual CJF PDF: <a href="https://www.cjf.jus.br/publico/biblioteca/Res%20267-2013.pdf" target="_blank">Abrir</a>
+          </Typography.Paragraph>
+        </Card>
       </Col>
     </Row>
   )
 }
+import MoneyInput from '../../components/MoneyInput'
+import PercentInput from '../../components/PercentInput'

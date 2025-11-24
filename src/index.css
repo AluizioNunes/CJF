@@ -17,13 +17,25 @@ html, body, #root {
 }
 
 body {
-  display: block; /* evita estreitamento do layout raiz */
+  display: block;
   min-width: 0;
   min-height: 100vh;
-  background-color: #f0f2f5; /* fundo padrão do Ant Design */
+  background-color: #f5f7fa;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.ant-card-head-title {
+  font-weight: 600;
+}
+
+.ant-form-item {
+  margin-bottom: 12px;
+}
+
+.ant-switch {
+  border-radius: 16px;
 }

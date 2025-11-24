@@ -1,0 +1,9 @@
+/* Light Mint theme */
+.theme-lightmint { --accent: #14b8a6; }
+.theme-lightmint .ant-layout-header { background: #f0fdfa !important; }
+.theme-lightmint .ant-card { background: #ecfeff !important; border-color: #cffafe !important; }
+.theme-lightmint .ant-btn { border-radius: 10px; text-transform: uppercase; letter-spacing: .03em; font-weight: 600; transition: all .2s ease; }
+.theme-lightmint .ant-btn-text { color: #0f172a; }
+.theme-lightmint .ant-btn-text:hover { color: var(--accent); transform: translateY(-1px); }
+.theme-lightmint .ant-input, .theme-lightmint .ant-select-selector, .theme-lightmint .ant-input-number, .theme-lightmint .ant-picker { background: #f0fdfa !important; border-color: #99f6e4 !important; color: #0f172a !important; }
+.theme-lightmint .ant-switch-checked { background: var(--accent) !important; }

@@ -1,0 +1,11 @@
+/* Deep Blue theme */
+.theme-deepblue {
+  --accent: #60a5fa;
+}
+.theme-deepblue .ant-layout-header { background: #0b1220 !important; }
+.theme-deepblue .ant-card { background: #0f172a !important; border-color: #1e293b !important; }
+.theme-deepblue .ant-btn { border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; transition: all .2s ease; }
+.theme-deepblue .ant-btn-text { color: #e5e7eb; }
+.theme-deepblue .ant-btn-text:hover { color: var(--accent); transform: translateY(-1px); }
+.theme-deepblue .ant-input, .theme-deepblue .ant-select-selector, .theme-deepblue .ant-input-number, .theme-deepblue .ant-picker { background: #0b1220 !important; border-color: #1e293b !important; color: #e5e7eb !important; }
+.theme-deepblue .ant-switch-checked { background: var(--accent) !important; }

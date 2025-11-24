@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Col, DatePicker, Form, InputNumber, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
+import { Button, Card, Col, DatePicker, Form, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
 import { Dayjs } from 'dayjs'
 import { fetchSelicCached } from '../../services/bcb'
 import { fetchIpcaeSerieCached, fetchInpcSerieCached } from '../../services/ibge'
 import { calcularDetalhadoMensal } from '../../utils/calculo'
 import type { RegraMarcoJuros } from '../../utils/calculo'
 import dayjs from 'dayjs'
-import { listarClientes, listarCausasProcessos, listarEspecialidades, listarEscritorios, type Cliente, type CausaProcesso, type Especialidade, type Escritorio } from '../../services/api'
+import { listarClientes, listarCausasProcessos, type Cliente, type CausaProcesso } from '../../services/api'
+import InfoTooltip from '../../components/InfoTooltip'
 
 type TipoDevedor = 'fazenda' | 'particular'
 type TipoAcao = 'condenatoria' | 'previdenciaria' | 'desapropriacao' | 'tributaria'
@@ -29,38 +30,24 @@ export default function AtualizacaoMonetaria() {
   // Seleção Cliente/Processo com mapeamento de especialidade/escritório
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [processos, setProcessos] = useState<CausaProcesso[]>([])
-  const [especialidades, setEspecialidades] = useState<Especialidade[]>([])
-  const [escritorios, setEscritorios] = useState<Escritorio[]>([])
+  
   const [clienteId, setClienteId] = useState<number | undefined>(undefined)
   const [processoId, setProcessoId] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [clis, procs, esps, escs] = await Promise.all([
-          listarClientes(), listarCausasProcessos(), listarEspecialidades(), listarEscritorios()
+        const [clis, procs] = await Promise.all([
+          listarClientes(), listarCausasProcessos()
         ])
         setClientes(Array.isArray(clis) ? clis : [])
         setProcessos(Array.isArray(procs) ? procs : [])
-        setEspecialidades(Array.isArray(esps) ? esps : [])
-        setEscritorios(Array.isArray(escs) ? escs : [])
       } catch {}
     }
     load()
   }, [])
 
-  const loadPreset = (key: string) => {
-    try {
-      const raw = localStorage.getItem(key)
-      if (!raw) return null
-      const p = JSON.parse(raw)
-      return {
-        ...p,
-        inicioPeriodo: p.inicioPeriodo ? dayjs(p.inicioPeriodo) : undefined,
-        fimPeriodo: p.fimPeriodo ? dayjs(p.fimPeriodo) : undefined,
-      }
-    } catch { return null }
-  }
+  
 
   const savePreset = (scope: 'processo' | 'cliente') => {
     const values = form.getFieldsValue()
@@ -80,41 +67,11 @@ export default function AtualizacaoMonetaria() {
     localStorage.setItem(key, JSON.stringify(payload))
   }
 
-  const mapTipoAcao = (espNome?: string | null): TipoAcao => {
-    const n = (espNome || '').toLowerCase()
-    if (n.includes('tribut')) return 'tributaria'
-    if (n.includes('previd')) return 'previdenciaria'
-    if (n.includes('desap')) return 'desapropriacao'
-    return 'condenatoria'
-  }
-  const mapTipoDevedor = (escNome?: string | null): TipoDevedor => {
-    const n = (escNome || '').toUpperCase()
-    if (n.includes('FAZENDA') || n.includes('PÚBLICA') || n.includes('PUBLICA') || n.includes('UNIÃO') || n.includes('UNIAO') || n.includes('ESTADO') || n.includes('MUNICÍPIO') || n.includes('MUNICIPIO')) return 'fazenda'
-    return 'particular'
-  }
+  
 
-  const prefillFromSelection = (procId?: number, cliId?: number) => {
-    let preset = procId ? loadPreset(`cjf:calc_preset:atualizacao:processo:${procId}`) : null
-    if (!preset && cliId) preset = loadPreset(`cjf:calc_preset:atualizacao:cliente:${cliId}`)
-    if (!preset) {
-      // tenta inferir a partir de especialidade/escritório do processo
-      const proc = processos.find(p => p.id === procId)
-      const espNome = especialidades.find(e => e.id === proc?.especialidade_id)?.nome
-      const escNome = escritorioNome(proc?.escritorio_id)
-      preset = {
-        valorInicial: 10000,
-        inicioPeriodo: dayjs().subtract(6, 'month'),
-        fimPeriodo: dayjs(),
-        tipoDevedor: mapTipoDevedor(escNome),
-        tipoAcao: mapTipoAcao(espNome),
-        arredondamento: 'mensal',
-        mostrarDetalhe: true,
-      }
-    }
-    form.setFieldsValue(preset)
-  }
+  
 
-  const escritorioNome = (id?: number | null) => (Array.isArray(escritorios) ? escritorios : []).find(e => e.id === id)?.nome || undefined
+  
 
   const onCalculate = async () => {
     const values = form.getFieldsValue()
@@ -165,8 +122,15 @@ export default function AtualizacaoMonetaria() {
           regime.push({ de: DEC_2021, metodo: 'selic' })
           indexadorDesc = 'IPCA-E + Juros (até 11/2021) / SELIC (de 12/2021)'
         } else {
-          regime.push({ de: inicio, ate: fim, metodo: 'simples', taxaMensalPercent: 1.0 })
-          indexadorDesc = 'IPCA-E + Juros 1% a.m.'
+          const SEP_2024 = new Date(2024, 8, 1)
+          if (fim >= SEP_2024) {
+            regime.push({ ate: new Date(2024, 7, 1), metodo: 'simples', taxaMensalPercent: 1.0 })
+            regime.push({ de: SEP_2024, metodo: 'legal' })
+            indexadorDesc = 'IPCA-15 (IPCA-E) + Taxa legal (SELIC deduz IPCA-15) a partir de 09/2024'
+          } else {
+            regime.push({ de: inicio, ate: fim, metodo: 'simples', taxaMensalPercent: 1.0 })
+            indexadorDesc = 'IPCA-E + Juros 1% a.m.'
+          }
         }
       }
 
@@ -200,15 +164,25 @@ export default function AtualizacaoMonetaria() {
   return (
     <Row gutter={16}>
       <Col span={12}>
-        <Card title="Calculadora de Atualização Monetária" bordered>
-          <Form form={form} layout="vertical" initialValues={{ valorInicial: 10000, tipoDevedor: 'fazenda', tipoAcao: 'condenatoria', arredondamento: 'mensal', mostrarDetalhe: true }}>
+        <Card title={<>
+          Calculadora de Atualização Monetária
+          <InfoTooltip
+            title="Atualização por tipo e devedor"
+            content={<>
+              <div>Aplica automaticamente IPCA-E/INPC + juros até 11/2021 e SELIC a partir de 12/2021 para Fazenda.</div>
+              <div>Para particulares, aplica IPCA-15 e taxa legal desde 09/2024.</div>
+              <div>Implementação: `src/utils/calculo.ts:220-305`; cortes: 12/2021 e 09/2024.</div>
+            </>}
+          />
+        </>} bordered>
+          <Form form={form} layout="vertical" initialValues={{ valorInicial: undefined, tipoDevedor: 'fazenda', tipoAcao: 'condenatoria', arredondamento: 'mensal', mostrarDetalhe: true, fimPeriodo: dayjs() }}>
             <Row gutter={8}>
               <Col span={12}>
                 <Form.Item name="clienteId" label="Cliente">
                   <Select
                     allowClear showSearch optionFilterProp="label"
                     value={clienteId}
-                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); prefillFromSelection(undefined, v) }}
+                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); form.setFieldsValue({ valorInicial: undefined, inicioPeriodo: undefined, fimPeriodo: dayjs() }) }}
                     options={(Array.isArray(clientes) ? clientes : []).map(c => ({ label: c.nome, value: c.id }))}
                   />
                 </Form.Item>
@@ -218,7 +192,8 @@ export default function AtualizacaoMonetaria() {
                   <Select
                     allowClear showSearch optionFilterProp="label"
                     value={processoId}
-                    onChange={(v) => { setProcessoId(v); prefillFromSelection(v, clienteId) }}
+                    disabled={!clienteId}
+                    onChange={(v) => { setProcessoId(v); const p = (processos||[]).find(x=>x.id===v); form.setFieldsValue({ valorInicial: p?.valor ?? undefined, inicioPeriodo: p?.dataDistribuicao ? dayjs(p.dataDistribuicao) : undefined, fimPeriodo: dayjs() }) }}
                     options={(Array.isArray(processos) ? processos : [])
                       .filter(p => !clienteId || p.cliente_id === clienteId)
                       .map(p => ({ label: `${p.numero}${p.descricao ? ' - ' + p.descricao : ''}`, value: p.id }))}
@@ -231,7 +206,7 @@ export default function AtualizacaoMonetaria() {
               <Button onClick={() => savePreset('cliente')} disabled={!clienteId}>Salvar parâmetros padrão do cliente</Button>
             </Space>
             <Form.Item label="Valor Principal (R$)" name="valorInicial" rules={[{ required: true }]}> 
-              <InputNumber style={{ width: '100%' }} min={0} step={1} />
+              <MoneyInput min={0} precision={2} disabled={!processoId} />
             </Form.Item>
             <Form.Item label="Data Inicial" name="inicioPeriodo" rules={[{ required: true }]}> 
               <DatePicker picker="month" style={{ width: '100%' }} />
@@ -239,10 +214,20 @@ export default function AtualizacaoMonetaria() {
             <Form.Item label="Data Final" name="fimPeriodo" rules={[{ required: true }]}> 
               <DatePicker picker="month" style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item label="Tipo de Devedor" name="tipoDevedor"> 
+            <Form.Item label={<>
+              Tipo de Devedor
+              <InfoTooltip content={<>
+                <div>Fazenda Pública: aplica SELIC pós EC 113/2021; Particular: taxa legal pós Lei 14.905/2024.</div>
+              </>} />
+            </>} name="tipoDevedor"> 
               <Select options={[{ value: 'fazenda', label: 'Fazenda Pública' }, { value: 'particular', label: 'Particular/Empresa' }]} />
             </Form.Item>
-            <Form.Item label="Tipo de Ação" name="tipoAcao"> 
+            <Form.Item label={<>
+              Tipo de Ação
+              <InfoTooltip content={<>
+                <div>Tributária: SELIC; Previdenciária: INPC + juros; Condenatória/Desapropriação: IPCA-E + juros.</div>
+              </>} />
+            </>} name="tipoAcao"> 
               <Select options={[{ value: 'condenatoria', label: 'Condenatória Geral' }, { value: 'previdenciaria', label: 'Benefício Previdenciário' }, { value: 'desapropriacao', label: 'Desapropriação' }, { value: 'tributaria', label: 'Tributária' }]} />
             </Form.Item>
             <Form.Item label="Arredondamento" name="arredondamento">
@@ -309,7 +294,19 @@ export default function AtualizacaoMonetaria() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 256, color: '#999' }}>Preencha os dados para calcular</div>
           )}
         </Card>
+        <Card title="Ajuda" style={{ marginTop: 12 }}>
+          <Typography.Paragraph>
+            Aplica regras por tipo de ação e tipo de devedor (cortes 12/2021 e 09/2024). Núcleo: `src/utils/calculo.ts:220-305`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Séries: SELIC `src/services/bcb.ts:32-44`; IPCA-E/INPC `src/services/ibge.ts:49-59`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Manual CJF PDF: <a href="https://www.cjf.jus.br/publico/biblioteca/Res%20267-2013.pdf" target="_blank">Abrir</a>
+          </Typography.Paragraph>
+        </Card>
       </Col>
     </Row>
   )
 }
+import MoneyInput from '../../components/MoneyInput'

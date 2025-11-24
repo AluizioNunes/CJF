@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Col, DatePicker, Form, InputNumber, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
+import { Button, Card, Col, DatePicker, Form, Radio, Row, Select, Switch, Table, Typography, Space } from 'antd'
 import { fetchSelicCached } from '../../services/bcb'
 import { calcularCombinacaoIndices, calcularDetalhadoMensal } from '../../utils/calculo'
 import { useTranslation } from 'react-i18next'
 import { useParametros } from '../../context/ParamsContext'
 import dayjs from 'dayjs'
 import { listarClientes, listarCausasProcessos, type Cliente, type CausaProcesso } from '../../services/api'
+import InfoTooltip from '../../components/InfoTooltip'
 
 export default function Tributario() {
   const { t } = useTranslation()
@@ -36,20 +37,7 @@ export default function Tributario() {
     load()
   }, [])
 
-  const loadPreset = (key: string) => {
-    try {
-      const raw = localStorage.getItem(key)
-      if (!raw) return null
-      const p = JSON.parse(raw)
-      return {
-        ...p,
-        inicioPeriodo: p.inicioPeriodo ? dayjs(p.inicioPeriodo) : undefined,
-        fimPeriodo: p.fimPeriodo ? dayjs(p.fimPeriodo) : undefined,
-      }
-    } catch {
-      return null
-    }
-  }
+  
 
   const savePreset = (scope: 'processo' | 'cliente') => {
     const values = form.getFieldsValue()
@@ -69,23 +57,7 @@ export default function Tributario() {
     localStorage.setItem(key, JSON.stringify(payload))
   }
 
-  const prefillFromSelection = (procId?: number, cliId?: number) => {
-    // tenta preset por processo, senão por cliente, senão padrão
-    let preset = procId ? loadPreset(`cjf:calc_preset:tributario:processo:${procId}`) : null
-    if (!preset && cliId) preset = loadPreset(`cjf:calc_preset:tributario:cliente:${cliId}`)
-    if (!preset) {
-      preset = {
-        valorInicial: 10000,
-        inicioPeriodo: dayjs().subtract(6, 'month'),
-        fimPeriodo: dayjs(),
-        metodoSelic: regras?.selicMetodo ?? 'simples',
-        baseTemporal: regras?.baseTemporal ?? 'mensal',
-        arredondamento: regras?.arredondamento ?? 'mensal',
-        mostrarDetalhe: true,
-      }
-    }
-    form.setFieldsValue(preset)
-  }
+  
 
   const onCalculate = async () => {
     const values = form.getFieldsValue()
@@ -126,11 +98,21 @@ export default function Tributario() {
   return (
     <Row gutter={[16,16]}>
       <Col xs={24} md={12}>
-        <Card title={t('pages.calculos.tributario.title')}>
+        <Card title={<>
+          {t('pages.calculos.tributario.title')}
+          <InfoTooltip
+            title="Tributário (SELIC)"
+            content={<>
+              <div>SELIC simples, sem acumular correção e juros; mês seguinte até mês anterior e 1% no mês do pagamento.</div>
+              <div>Fonte: manual linhas 744–751 e 836–841. Série: `src/services/bcb.ts:32-44`.</div>
+            </>}
+          />
+        </>}>
           <Form form={form} layout="vertical" initialValues={{
             metodoSelic: regras?.selicMetodo ?? 'simples',
             arredondamento: regras?.arredondamento ?? 'mensal',
-            baseTemporal: regras?.baseTemporal ?? 'mensal'
+            baseTemporal: regras?.baseTemporal ?? 'mensal',
+            fimPeriodo: dayjs()
           }}>
             <Row gutter={8}>
               <Col span={12}>
@@ -140,7 +122,7 @@ export default function Tributario() {
                     showSearch
                     optionFilterProp="label"
                     value={clienteId}
-                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); prefillFromSelection(undefined, v) }}
+                    onChange={(v) => { setClienteId(v); setProcessoId(undefined); form.setFieldsValue({ valorInicial: undefined, inicioPeriodo: undefined, fimPeriodo: dayjs() }) }}
                     options={(Array.isArray(clientes) ? clientes : []).map(c => ({ label: c.nome, value: c.id }))}
                   />
                 </Form.Item>
@@ -152,7 +134,8 @@ export default function Tributario() {
                     showSearch
                     optionFilterProp="label"
                     value={processoId}
-                    onChange={(v) => { setProcessoId(v); prefillFromSelection(v, clienteId) }}
+                    disabled={!clienteId}
+                    onChange={(v) => { setProcessoId(v); const p = (processos||[]).find(x=>x.id===v); form.setFieldsValue({ valorInicial: p?.valor ?? undefined, inicioPeriodo: p?.dataDistribuicao ? dayjs(p.dataDistribuicao) : undefined, fimPeriodo: dayjs() }) }}
                     options={(Array.isArray(processos) ? processos : [])
                       .filter(p => !clienteId || p.cliente_id === clienteId)
                       .map(p => ({ label: `${p.numero}${p.descricao ? ' - ' + p.descricao : ''}`, value: p.id }))}
@@ -165,7 +148,7 @@ export default function Tributario() {
               <Button onClick={() => savePreset('cliente')} disabled={!clienteId}>Salvar parâmetros padrão do cliente</Button>
             </Space>
             <Form.Item name="valorInicial" label={t('pages.calculos.fields.valorInicial')} rules={[{ required: true }]}> 
-              <InputNumber min={0} style={{ width: '100%' }} prefix="R$" precision={2} />
+              <MoneyInput min={0} precision={2} disabled={!processoId} />
             </Form.Item>
             <Form.Item name="inicioPeriodo" label={t('pages.calculos.fields.inicioPeriodo')} rules={[{ required: true }]}> 
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
@@ -173,7 +156,13 @@ export default function Tributario() {
             <Form.Item name="fimPeriodo" label={t('pages.calculos.fields.fimPeriodo')} rules={[{ required: true }]}> 
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
-            <Form.Item name="metodoSelic" label={t('pages.calculos.fields.metodoSelic')}>
+            <Form.Item name="metodoSelic" label={<>
+              {t('pages.calculos.fields.metodoSelic')}
+              <InfoTooltip content={<>
+                <div>Simples: soma de diárias; Mensal: composição mensal de diárias.</div>
+                <div>Implementação: `src/utils/calculo.ts:20-35`.</div>
+              </>} />
+            </>}>
               <Radio.Group disabled={modoEstrito}>
                 <Radio value="simples">Capitalização simples</Radio>
                 <Radio value="mensal">Fator mensal</Radio>
@@ -181,7 +170,13 @@ export default function Tributario() {
             </Form.Item>
             <Row gutter={8}>
               <Col span={12}>
-                <Form.Item name="baseTemporal" label={t('pages.calculos.fields.baseTemporal')}>
+                <Form.Item name="baseTemporal" label={<>
+                  {t('pages.calculos.fields.baseTemporal')}
+                  <InfoTooltip content={<>
+                    <div>Mensal: aplica índices mensais; Diária: pro rata em meses parciais.</div>
+                    <div>Implementação: `src/utils/calculo.ts:148-169, 220-305`.</div>
+                  </>} />
+                </>}>
                   <Radio.Group disabled={modoEstrito}>
                     <Radio value="mensal">Mensal</Radio>
                     <Radio value="diaria">Diária (pro rata)</Radio>
@@ -189,7 +184,13 @@ export default function Tributario() {
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item name="arredondamento" label={t('pages.calculos.fields.arredondamento')}>
+                <Form.Item name="arredondamento" label={<>
+                  {t('pages.calculos.fields.arredondamento')}
+                  <InfoTooltip content={<>
+                    <div>Mensal: arredonda cada mês; Final: arredonda somente no resultado final.</div>
+                    <div>Implementação: `src/utils/calculo.ts:116-143, 274-303`.</div>
+                  </>} />
+                </>}>
                   <Select
                     disabled={modoEstrito}
                     options={[
@@ -245,7 +246,19 @@ export default function Tributario() {
             SELIC diária: janelas superiores a 10 anos serão automaticamente limitadas.
           </Typography.Paragraph>
         </Card>
+        <Card title="Ajuda" style={{ marginTop: 12 }}>
+          <Typography.Paragraph>
+            SELIC simples, sem cumular com correção e juros (manual: 744–751, 836–841). Série SELIC: `src/services/bcb.ts:32-44`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Núcleo de cálculo: `src/utils/calculo.ts:20-40, 47-79`. Detalhamento mensal: `src/utils/calculo.ts:220-305`.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Manual CJF PDF: <a href="https://www.cjf.jus.br/publico/biblioteca/Res%20267-2013.pdf" target="_blank">Abrir</a>
+          </Typography.Paragraph>
+        </Card>
       </Col>
     </Row>
   )
 }
+import MoneyInput from '../../components/MoneyInput'

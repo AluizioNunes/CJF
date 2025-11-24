@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Drawer, Form, Input, message, Space, Table, Typography } from 'antd'
+import { Button, Card, Drawer, Form, Input, Space, Table, Typography } from 'antd'
 import ErrorBanner from '../../components/ErrorBanner'
 import { criarEscritorio, excluirEscritorio, listarEscritorios, atualizarEscritorio } from '../../services/api'
 import type { Escritorio } from '../../services/api'

@@ -1,4 +1,6 @@
 import { Card, Form, InputNumber, Table, Button, Row, Col, Typography, Switch, Input } from 'antd'
+// MoneyInput não utilizado diretamente nesta tela
+import InfoTooltip from '../../components/InfoTooltip'
 import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { calcularCustas } from '../../utils/custas'
@@ -58,7 +60,13 @@ export default function MandadosServicos() {
   }
 
   return (
-    <Card title={t('pages.custas.mandadosServicos.title')}>
+    <Card title={<>
+      {t('pages.custas.mandadosServicos.title')}
+      <InfoTooltip content={<>
+        <div>Diligência de oficial (base + km) e certidões conforme Tabela III.</div>
+        <div>Exceções de porte em e-Proc conforme região.</div>
+      </>} />
+    </>}>
       <Form form={form} layout="vertical" initialValues={{}}>
         <Row gutter={[16,16]}>
           <Col xs={24} md={8}>
@@ -90,7 +98,13 @@ export default function MandadosServicos() {
             {rules.map((r) => (
               <Row key={r.id} gutter={8} align="middle">
                 <Col flex="auto">
-                  <Typography.Text>{r.label}</Typography.Text>
+                  <Typography.Text>
+                    {r.label}
+                    <InfoTooltip content={<>
+                      <div>Regra: {r.tipo === 'percentual' ? 'percentual' : r.tipo}</div>
+                      <div>Base km e valor por km quando aplicável.</div>
+                    </>} />
+                  </Typography.Text>
                 </Col>
                 <Col>
                   <Form.Item name={`q_${r.id}`} label={t('pages.custas.fields.quantidade')} initialValue={1}>
@@ -124,6 +138,14 @@ export default function MandadosServicos() {
         pagination={false}
       />
       <Typography.Paragraph><b>{t('pages.custas.fields.total')}:</b> {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography.Paragraph>
+      <Card title="Ajuda" style={{ marginTop: 12 }}>
+        <Typography.Paragraph>
+          Diligências calculadas por base + km; valores e exceções variam por TRF (ver `src/data/custas/*`).
+        </Typography.Paragraph>
+        <Typography.Paragraph>
+          Regras de cálculo: `src/utils/custas.ts`.
+        </Typography.Paragraph>
+      </Card>
     </Card>
   )
 }

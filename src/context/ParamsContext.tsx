@@ -74,6 +74,7 @@ export type ParametrosCalculo = {
       }
       observacoes?: string
     }
+    sourcesOverride?: Record<'CJF' | 'TRF1' | 'TRF2' | 'TRF3' | 'TRF4' | 'TRF5' | 'TRF6', { name: string; url: string; type: 'html' | 'pdf' | 'calculator' }[]>
   }
 }
 
@@ -162,6 +163,10 @@ const DEFAULT_PARAMS: ParametrosCalculo = {
         acoesPenais: [],
       },
       observacoes: 'Configuração inicial de gratuidade/isenções. Ajustar conforme Manual CJF 2025.'
+    }
+    ,
+    sourcesOverride: {
+      CJF: [], TRF1: [], TRF2: [], TRF3: [], TRF4: [], TRF5: [], TRF6: []
     }
   }
 }

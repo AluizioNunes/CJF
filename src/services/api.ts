@@ -162,15 +162,24 @@ export type CausaProcesso = {
   advogado_id?: number
   escritorio_id?: number
   especialidade_id?: number
+  valor?: number
+  dataDistribuicao?: string
 }
 export async function listarCausasProcessos() {
-  return request('/causas-processos', { method: 'GET' }) as Promise<CausaProcesso[]>
+  const res = await request('/causas-processos', { method: 'GET' }) as any
+  const arr = Array.isArray(res) ? res : []
+  return arr.map((r: any) => ({
+    ...r,
+    dataDistribuicao: r.dataDistribuicao ?? r.data_distribuicao ?? r.dataDistribuicao,
+  })) as CausaProcesso[]
 }
 export async function criarCausaProcesso(payload: Omit<CausaProcesso, 'id'>) {
-  return request('/causas-processos', { method: 'POST', body: JSON.stringify(payload) }) as Promise<CausaProcesso>
+  const res = await request('/causas-processos', { method: 'POST', body: JSON.stringify(payload) }) as any
+  return { ...res, dataDistribuicao: res.dataDistribuicao ?? res.data_distribuicao } as CausaProcesso
 }
 export async function atualizarCausaProcesso(id: number, payload: Partial<Omit<CausaProcesso, 'id'>>) {
-  return request(`/causas-processos/${id}`, { method: 'PUT', body: JSON.stringify(payload) }) as Promise<CausaProcesso>
+  const res = await request(`/causas-processos/${id}`, { method: 'PUT', body: JSON.stringify(payload) }) as any
+  return { ...res, dataDistribuicao: res.dataDistribuicao ?? res.data_distribuicao } as CausaProcesso
 }
 export async function excluirCausaProcesso(id: number) {
   await request(`/causas-processos/${id}`, { method: 'DELETE' })

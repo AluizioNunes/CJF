@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useState } from 'react'
-import { Row, Col, Card, Statistic, Typography, Space, Button, message } from 'antd'
+import { Row, Col, Card, Statistic, Typography, Space, Button, message as staticMessage } from 'antd'
 import { motion } from 'framer-motion'
 import { lazy } from 'react'
 const EChart = lazy(() => import('../components/EChart'))
@@ -17,6 +17,7 @@ import {
   type Cliente,
   type CausaProcesso,
 } from '../services/api'
+import { getMessageApi } from '../utils/ui'
 
 export default function Dashboard() {
   const { parametros } = useParametros()
@@ -34,7 +35,7 @@ export default function Dashboard() {
     setSeeding(true)
     try {
       const res = await (await import('../services/api')).seedDemo()
-      message.success(`Seed criado: ESP=${res.created.especialidades} | ESC=${res.created.escritorios} | ADV=${res.created.advogados} | PROC=${res.created.causas_processos}`)
+      { const api = getMessageApi(); (api ? api : staticMessage).success(`Seed criado: ESP=${res.created.especialidades} | ESC=${res.created.escritorios} | ADV=${res.created.advogados} | PROC=${res.created.causas_processos}`) }
       // Recarregar cadastros para refletir novas contagens
       const [es, ad, cl, pr] = await Promise.all([
         listarEscritorios().catch(() => []),
@@ -47,7 +48,7 @@ export default function Dashboard() {
       setClientes(cl as Cliente[])
       setProcessos(pr as CausaProcesso[])
     } catch (e: any) {
-      message.error(`Falha ao criar dados: ${e?.message || e}`)
+      { const api = getMessageApi(); (api ? api : staticMessage).error(`Falha ao criar dados: ${e?.message || e}`) }
     } finally {
       setSeeding(false)
     }

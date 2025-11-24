@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, Text
+from sqlalchemy import String, Integer, Text, Numeric
 from sqlalchemy.sql import quoted_name
 from ..database import Base
 from .common import BaseModelMixin
@@ -15,3 +15,4 @@ class CausaProcesso(Base, BaseModelMixin):
     advogado_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     escritorio_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     especialidade_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    valor: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)

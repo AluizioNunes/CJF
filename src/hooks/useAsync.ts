@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { message } from 'antd'
+import { message as staticMessage } from 'antd'
+import { getMessageApi } from '../utils/ui'
 
 type DataOptions<T> = {
   auto?: boolean
@@ -28,7 +29,9 @@ export function useAsyncData<T>(loader: () => Promise<T>, options: DataOptions<T
     } catch (e: any) {
       const msg = e?.message || 'Falha ao carregar'
       setError(msg)
-      message.error(errorTitle ? `${errorTitle}: ${msg}` : msg)
+      const apiInst = getMessageApi()
+      if (apiInst) apiInst.error(errorTitle ? `${errorTitle}: ${msg}` : msg)
+      else staticMessage.error(errorTitle ? `${errorTitle}: ${msg}` : msg)
       // Para listas, manter data como array vazio quando falhar
       try { setData(([] as unknown) as T) } catch {}
       const status = typeof e?.status === 'number' ? e.status : 0
@@ -65,13 +68,19 @@ export function useAsyncAction<A extends any[], R>(fn: (...args: A) => Promise<R
       const result = await fn(...args)
       if (successMessage) {
         const msg = typeof successMessage === 'function' ? successMessage(result, args) : successMessage
-        if (msg) message.success(msg)
+        if (msg) {
+          const apiInst = getMessageApi()
+          if (apiInst) apiInst.success(msg)
+          else staticMessage.success(msg)
+        }
       }
       onSuccess?.(result)
       return result
     } catch (e: any) {
       const msg = e?.message || 'Falha na operação'
-      message.error(errorTitle ? `${errorTitle}: ${msg}` : msg)
+      const apiInst = getMessageApi()
+      if (apiInst) apiInst.error(errorTitle ? `${errorTitle}: ${msg}` : msg)
+      else staticMessage.error(errorTitle ? `${errorTitle}: ${msg}` : msg)
       const status = typeof e?.status === 'number' ? e.status : 0
       const isCritical = !status || status >= 500
       if (import.meta.env.DEV) console.error('[Action]', e)

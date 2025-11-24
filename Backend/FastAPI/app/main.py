@@ -4,6 +4,7 @@ import os
 from .routers import health, items
 from .routers import advogados, clientes, causas_processos, especialidades, parametros, usuarios, perfil, permissoes, auditoria, auth, escritorios, seeds
 from .database import Base, engine
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 import time
 
@@ -42,19 +43,23 @@ app = FastAPI(
 
 # CORS (permitir frontend local e via NGINX)
 _origins_env = os.getenv("CORS_ORIGINS")
-allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()] if _origins_env else [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost",
-    "http://127.0.0.1",
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()] if _origins_env else None
+if allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.get("/", summary="Status da API")
@@ -88,6 +93,19 @@ def on_startup():
             break
         except OperationalError:
             time.sleep(1)
+
+    # Garantir coluna 'valor' em CausasProcessos
+    with engine.begin() as conn:
+        exists = conn.execute(text(
+            """
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'CausasProcessos'
+              AND column_name = 'valor'
+            """
+        )).scalar() is not None
+        if not exists:
+            conn.execute(text("ALTER TABLE \"CausasProcessos\" ADD COLUMN valor numeric(14,2) DEFAULT 0 NOT NULL"))
 
 
 if __name__ == "__main__":
