@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: cjf_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692"
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    container_name: cjf_postgres
+    environment:
+      POSTGRES_USER: cjf
+      POSTGRES_PASSWORD: cjf
+      POSTGRES_DB: cjf
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 60s

@@ -1,0 +1,55 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: cjf_rabbitmq
+    volumes:
+      - itfact-cjf_CJF_RABBITMQ_DATA:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    container_name: cjf_postgres
+    environment:
+      POSTGRES_USER: cjf
+      POSTGRES_PASSWORD: cjf
+      POSTGRES_DB: cjf
+    ports:
+      - "15432:5432"
+    volumes:
+      - itfact-cjf_CJF_POSTGRES_DATA:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "cjf"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  backend:
+    build:
+      context: ./Backend/FastAPI
+      dockerfile: Dockerfile
+    container_name: cjf_backend
+    env_file:
+      - ./Backend/FastAPI/.env
+    ports:
+      - "18000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  itfact-cjf_CJF_POSTGRES_DATA:
+    external: true
+  itfact-cjf_CJF_RABBITMQ_DATA:
+    external: true
