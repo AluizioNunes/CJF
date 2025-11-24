@@ -9,6 +9,7 @@ class UsuarioBase(UppercaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
     permissoes: Optional[str] = None  # JSON serializado
+    advogado_id: Optional[int] = None
 
 
 class UsuarioCreate(UsuarioBase):
@@ -17,6 +18,7 @@ class UsuarioCreate(UsuarioBase):
 
 class UsuarioRead(UsuarioBase):
     id: int
+    escritorios: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -27,3 +29,4 @@ class UsuarioUpdate(UppercaseModel):
     role: Optional[str] = None
     permissoes: Optional[str] = None
     senha: Optional[str] = None
+    advogado_id: Optional[int] = None

@@ -5,7 +5,7 @@ type User = { username: string; roles: string[] }
 type AuthContextType = {
   token: string | null
   user: User | null
-  login: (username: string, password: string) => Promise<void>
+  login: (username: string, password: string, escritorioId: number) => Promise<void>
   logout: () => void
   hasPermission: (role: string) => boolean
 }
@@ -16,8 +16,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const [token, setTokenState] = useState<string | null>(() => getToken())
   const [user, setUser] = useState<User | null>(token ? { username: 'admin', roles: ['admin'] } : null)
 
-  const login = async (username: string, password: string) => {
-    await apiLogin({ username, password })
+  const login = async (username: string, password: string, escritorioId: number) => {
+    await apiLogin({ username, password, escritorio_id: escritorioId })
     setTokenState(getToken())
     setUser({ username, roles: ['admin'] })
   }

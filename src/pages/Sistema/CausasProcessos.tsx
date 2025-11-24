@@ -140,7 +140,10 @@ export default function CausasProcessos() {
   return (
     <Card title="Causas e Processos">
       <Space style={{ marginBottom: 12 }}>
-        <Input.Search allowClear placeholder="Filtrar por número, descrição ou status" onSearch={(v) => setQ(v)} onChange={(e) => setQ(e.target.value)} style={{ width: 420 }} />
+        <Space.Compact>
+          <Input allowClear placeholder="Filtrar por número, descrição ou status" value={q} onChange={(e) => setQ(e.target.value)} onPressEnter={() => setQ(q)} style={{ width: 360 }} />
+          <Button onClick={() => setQ(q)}>Buscar</Button>
+        </Space.Compact>
         <DatePicker.RangePicker allowClear value={dateRange ?? undefined} onChange={(vals) => setDateRange(vals as [Dayjs, Dayjs] | null)} format="YYYY-MM-DD" />
         <Popover
           trigger="click"

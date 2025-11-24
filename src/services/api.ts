@@ -60,7 +60,7 @@ async function request(path: string, init: RequestInit = {}) {
 }
 
 // Auth
-export async function login(payload: { username: string; password: string }) {
+export async function login(payload: { username: string; password: string; escritorio_id?: number }) {
   try {
     const data = await request('/auth/login', {
       method: 'POST',
@@ -123,9 +123,12 @@ export async function excluirEspecialidade(id: number) {
 }
 
 // Tipos e CRUD de Advogados
-export type Advogado = { id: number; nome: string; oab?: string; email?: string; telefone?: string; especialidade_id?: number }
+export type Advogado = { id: number; nome: string; oab?: string; email?: string; telefone?: string; especialidade_id?: number; escritorios_ids?: number[]; escritorios?: Escritorio[] }
 export async function listarAdvogados() {
   return request('/advogados', { method: 'GET' }) as Promise<Advogado[]>
+}
+export async function listarEscritoriosPorAdvogado(id: number) {
+  return request(`/advogados/${id}/escritorios`, { method: 'GET' }) as Promise<Escritorio[]>
 }
 export async function criarAdvogado(payload: Omit<Advogado, 'id'>) {
   return request('/advogados', { method: 'POST', body: JSON.stringify(payload) }) as Promise<Advogado>
@@ -186,7 +189,7 @@ export async function excluirCausaProcesso(id: number) {
 }
 
 // Tipos e CRUD de Usuários
-export type Usuario = { id: number; username: string; nome: string; email?: string; role?: string; permissoes?: string }
+export type Usuario = { id: number; username: string; nome: string; email?: string; role?: string; permissoes?: string; advogado_id?: number; escritórios?: string; escritorios?: string }
 export async function listarUsuarios() {
   return request('/usuarios', { method: 'GET' }) as Promise<Usuario[]>
 }

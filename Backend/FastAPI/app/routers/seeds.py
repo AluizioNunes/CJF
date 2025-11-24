@@ -6,8 +6,11 @@ from ..models.especialidade import Especialidade
 from ..models.escritorio import Escritorio
 from ..models.advogado import Advogado
 from ..models.causas_processos import CausaProcesso
+from datetime import date
 from ..models.cliente import Cliente
 from ..models.usuario import Usuario
+from ..models.usuario_escritorio import UsuarioEscritorio
+from ..models.advogado_escritorio import AdvogadoEscritorio
 from ..models.perfil import Perfil
 from ..models.permissao import Permissao
 
@@ -74,6 +77,14 @@ def _get_or_create_processo(db: Session, data: Dict[str, str | int | None]) -> C
                 db.refresh(row)
             except Exception:
                 pass
+        if data.get("dataDistribuicao") is not None:
+            try:
+                iso = data.get("dataDistribuicao")
+                row.dataDistribuicao = date.fromisoformat(iso) if isinstance(iso, str) else iso  # type: ignore
+                db.commit()
+                db.refresh(row)
+            except Exception:
+                pass
         return row
     row = CausaProcesso(
         numero=numero_u,
@@ -83,6 +94,7 @@ def _get_or_create_processo(db: Session, data: Dict[str, str | int | None]) -> C
         advogado_id=(data.get("advogado_id") or None),
         escritorio_id=(data.get("escritorio_id") or None),
         especialidade_id=(data.get("especialidade_id") or None),
+        dataDistribuicao=(date.fromisoformat(data.get("dataDistribuicao")) if isinstance(data.get("dataDistribuicao"), str) else data.get("dataDistribuicao") or None),
         valor=(data.get("valor") or None),
     )
     db.add(row)
@@ -164,6 +176,7 @@ def seed_demo(db: Session = Depends(get_db)) -> Dict[str, object]:
         "especialidades": 0,
         "escritorios": 0,
         "advogados": 0,
+        "advogado_escritorios": 0,
         "clientes": 0,
         "causas_processos": 0,
         "perfis": 0,
@@ -229,7 +242,16 @@ def seed_demo(db: Session = Depends(get_db)) -> Dict[str, object]:
             "telefone": a["telefone"],
             "especialidade_id": esp_id,
         })
-        adv_id_to_office_id[adv_row.id] = office_id_by_name.get(a["escritorio"].upper()) or None
+        office_name = a.get("escritorio")
+        office_names = a.get("escritorios") if isinstance(a.get("escritorios"), list) else ([office_name] if office_name else [])
+        for on in office_names:
+            oid = office_id_by_name.get((on or "").upper())
+            if oid:
+                if not db.query(AdvogadoEscritorio).filter(AdvogadoEscritorio.advogado_id == adv_row.id, AdvogadoEscritorio.escritorio_id == oid).first():
+                    db.add(AdvogadoEscritorio(advogado_id=adv_row.id, escritorio_id=oid))
+                    db.commit()
+                    created["advogado_escritorios"] += 1
+        adv_id_to_office_id[adv_row.id] = office_id_by_name.get((office_name or "").upper()) or None
         if adv_row.nome == a["nome"].upper():
             created["advogados"] += 1 if adv_row.id else 0
 
@@ -260,6 +282,10 @@ def seed_demo(db: Session = Depends(get_db)) -> Dict[str, object]:
     import random
     for idx, p in enumerate(processos_data, start=1):
         p["valor"] = round(random.uniform(5000, 50000), 2)
+        # Distribuição: datas espalhadas ao longo do ano
+        month = 1 + (idx % 12)
+        day = 10 + (idx % 15)
+        p["dataDistribuicao"] = f"2024-{month:02d}-{day:02d}"
         _ = _get_or_create_processo(db, p)
         created["causas_processos"] += 1
 
@@ -299,5 +325,11 @@ def seed_demo(db: Session = Depends(get_db)) -> Dict[str, object]:
     }
     u = _get_or_create_usuario(db, admin_user)
     created["usuarios"] += 1 if u.id else 0
+
+    # Vincular admin a todos os escritórios
+    for eid in office_id_by_name.values():
+        if not db.query(UsuarioEscritorio).filter(UsuarioEscritorio.usuario_id == u.id, UsuarioEscritorio.escritorio_id == eid).first():
+            db.add(UsuarioEscritorio(usuario_id=u.id, escritorio_id=eid))
+            db.commit()
 
     return {"status": "OK", "created": created}

@@ -107,6 +107,32 @@ def on_startup():
         if not exists:
             conn.execute(text("ALTER TABLE \"CausasProcessos\" ADD COLUMN valor numeric(14,2) DEFAULT 0 NOT NULL"))
 
+    # Garantir coluna 'dataDistribuicao' (DATE) em CausasProcessos
+    with engine.begin() as conn:
+        exists = conn.execute(text(
+            """
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'CausasProcessos'
+              AND column_name = 'datadistribuicao'
+            """
+        )).scalar() is not None
+        if not exists:
+            conn.execute(text("ALTER TABLE \"CausasProcessos\" ADD COLUMN dataDistribuicao date NULL"))
+
+    # Garantir coluna 'advogado_id' em Usuarios
+    with engine.begin() as conn:
+        exists = conn.execute(text(
+            """
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'Usuarios'
+              AND column_name = 'advogado_id'
+            """
+        )).scalar() is not None
+        if not exists:
+            conn.execute(text("ALTER TABLE \"Usuarios\" ADD COLUMN advogado_id integer NULL"))
+
 
 if __name__ == "__main__":
     import uvicorn

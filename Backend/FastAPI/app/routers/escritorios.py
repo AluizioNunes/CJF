@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import List, Dict
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -6,13 +6,18 @@ from ..models.escritorio import Escritorio
 from ..schemas.escritorio import EscritorioCreate, EscritorioRead, EscritorioUpdate
 from ..models.auditoria import Auditoria
 from .utils import upper_except_email, build_diff
+from .auth import _resolve_token
 
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[EscritorioRead], summary="Listar Escritórios")
-def list_escritorios(db: Session = Depends(get_db)) -> List[EscritorioRead]:
+def list_escritorios(authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> List[EscritorioRead]:
+    ctx = _resolve_token(authorization, db)
+    if ctx and ctx.get("escritorio_id"):
+        row = db.get(Escritorio, ctx["escritorio_id"])  # type: ignore
+        return [row] if row else []
     return db.query(Escritorio).all()
 
 

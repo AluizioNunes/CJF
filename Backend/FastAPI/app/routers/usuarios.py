@@ -3,6 +3,8 @@ from typing import List, Dict
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.usuario import Usuario
+from ..models.advogado_escritorio import AdvogadoEscritorio
+from ..models.escritorio import Escritorio
 from ..schemas.usuario import UsuarioCreate, UsuarioRead, UsuarioUpdate
 from ..models.auditoria import Auditoria
 from .utils import upper_except_email, build_diff
@@ -13,7 +15,27 @@ router = APIRouter()
 
 @router.get("/", response_model=List[UsuarioRead], summary="Listar Usuários")
 def list_usuarios(db: Session = Depends(get_db)) -> List[UsuarioRead]:
-    return db.query(Usuario).all()
+    rows = db.query(Usuario).all()
+    result: List[UsuarioRead] = []  # type: ignore
+    for r in rows:
+        nomes = None
+        if r.advogado_id:
+            links = db.query(AdvogadoEscritorio).filter(AdvogadoEscritorio.advogado_id == r.advogado_id).all()
+            ids = [lk.escritorio_id for lk in links]
+            if ids:
+                offices = db.query(Escritorio).filter(Escritorio.id.in_(ids)).all()
+                nomes = ", ".join([o.nome for o in offices]) if offices else None
+        result.append({
+            "id": r.id,
+            "username": r.username,
+            "nome": r.nome,
+            "email": r.email,
+            "role": r.role,
+            "permissoes": r.permissoes,
+            "advogado_id": r.advogado_id,
+            "escritorios": nomes,
+        })  # type: ignore
+    return result
 
 
 @router.post("/", response_model=UsuarioRead, summary="Criar Usuário")
@@ -26,6 +48,7 @@ def create_usuario(payload: UsuarioCreate, db: Session = Depends(get_db)) -> Usu
         role=data.get("role"),
         permissoes=data.get("permissoes"),
         senha_hash=data.get("senha"),
+        advogado_id=data.get("advogado_id"),
     )
     db.add(row)
     db.commit()

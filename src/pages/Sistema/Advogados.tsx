@@ -1,21 +1,45 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Drawer, Form, Input, Select, Space, Table } from 'antd'
+import { Button, Card, Drawer, Form, Input, Select, Space, Table, Tag } from 'antd'
 import ErrorBanner from '../../components/ErrorBanner'
-import { listarAdvogados, criarAdvogado, atualizarAdvogado, excluirAdvogado, listarEspecialidades, type Advogado, type Especialidade } from '../../services/api'
+import { listarAdvogados, criarAdvogado, atualizarAdvogado, excluirAdvogado, listarEspecialidades, listarEscritorios, listarCausasProcessos, type Advogado, type Especialidade, type Escritorio, type CausaProcesso } from '../../services/api'
 import { useAsyncAction, useAsyncData } from '../../hooks/useAsync'
 
 export default function Advogados() {
-  const { data: advogados, loading: advLoading, error: advError, reload: reloadAdvogados } = useAsyncData<Advogado[]>(listarAdvogados, { errorTitle: 'Falha ao carregar Advogados' })
+  const { data: advogados, loading: advLoading, error: advError, reload: reloadAdvogados, setData: setAdvogados } = useAsyncData<Advogado[]>(listarAdvogados, { errorTitle: 'Falha ao carregar Advogados' })
   const { data: especialidades, loading: espLoading, error: espError, reload: reloadEspecialidades } = useAsyncData<Especialidade[]>(listarEspecialidades, { errorTitle: 'Falha ao carregar Especialidades' })
+  const { data: escritorios, loading: escLoading, error: escError, reload: reloadEscritorios } = useAsyncData<Escritorio[]>(listarEscritorios, { errorTitle: 'Falha ao carregar Escritórios' })
+  const { data: processos, loading: procLoading, error: procError, reload: reloadProcessos } = useAsyncData<CausaProcesso[]>(listarCausasProcessos, { errorTitle: 'Falha ao carregar Processos' })
   const espList = Array.isArray(especialidades) ? especialidades : []
   const [filtered, setFiltered] = useState<Advogado[]>([])
-  const loading = advLoading || espLoading
+  const loading = advLoading || espLoading || escLoading || procLoading
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Advogado | null>(null)
   const [form] = Form.useForm<Partial<Omit<Advogado, 'id'>>>()
   const [q, setQ] = useState('')
-  const error = advError || espError
-  const reload = () => { reloadAdvogados(); reloadEspecialidades() }
+  const error = advError || espError || escError || procError
+  const reload = () => { reloadAdvogados(); reloadEspecialidades(); reloadEscritorios(); reloadProcessos() }
+
+  const officesByAdv = useMemo(() => {
+    const p = Array.isArray(processos) ? processos : []
+    const allOffices = Array.isArray(escritorios) ? escritorios : []
+    const byId = new Map<number, Escritorio>(allOffices.map(e => [e.id, e]))
+    const map: Record<number, Escritorio[]> = {}
+    p.forEach(cp => {
+      if (cp.advogado_id && cp.escritorio_id) {
+        const arr = map[cp.advogado_id] || []
+        const office = byId.get(cp.escritorio_id)
+        if (office && !arr.find(o => o.id === office.id)) arr.push(office)
+        map[cp.advogado_id] = arr
+      }
+    })
+    return map
+  }, [processos, escritorios])
+
+  const tagColors = ['magenta','red','volcano','orange','gold','lime','green','cyan','blue','geekblue','purple']
+  const tagColorFor = (seed: string | number) => {
+    const n = typeof seed === 'number' ? seed : Array.from(seed).reduce((a, c) => a + c.charCodeAt(0), 0)
+    return tagColors[n % tagColors.length]
+  }
   useEffect(() => { /* carregamento automático via hooks */ }, [])
 
   useEffect(() => {
@@ -36,7 +60,19 @@ export default function Advogados() {
     async (payload: Partial<Omit<Advogado, 'id'>>) => (editing ? atualizarAdvogado(editing.id, payload) : criarAdvogado(payload as Omit<Advogado, 'id'>)),
     {
       successMessage: () => (editing ? 'Advogado atualizado' : 'Advogado criado'),
-      onSuccess: () => { setOpen(false); setEditing(null); form.resetFields(); reload() }
+      onSuccess: (result) => {
+        const ids = (form.getFieldValue('escritorios_ids') || []) as number[]
+        const offices = ids.map((id: number) => (Array.isArray(escritorios) ? escritorios : []).find(e => e.id === id)).filter(Boolean) as Escritorio[]
+        setAdvogados((prev) => {
+          const arr = Array.isArray(prev) ? [...prev] as Advogado[] : []
+          const idx = arr.findIndex(a => a.id === (result as any)?.id)
+          const merged = { ...(result as any), escritorios_ids: ids, escritorios: offices } as Advogado
+          if (idx >= 0) arr[idx] = merged
+          else arr.push(merged)
+          return arr
+        })
+        setOpen(false); setEditing(null); form.resetFields()
+      }
     }
   )
   const { run: deleteAdvogado, loading: deleting } = useAsyncAction(
@@ -56,16 +92,40 @@ export default function Advogados() {
     { title: 'E-mail', dataIndex: 'email' },
     { title: 'Telefone', dataIndex: 'telefone' },
     { title: 'Especialidade', dataIndex: 'especialidade_id', render: (v: number | null) => (espList.find(e => e.id === v))?.nome || '—' },
+    { title: 'Escritórios', dataIndex: 'escritorios', render: (_: any, record: Advogado) => {
+      const list = record.escritorios as Escritorio[] | undefined
+      if (list && list.length) return (
+        <Space wrap>
+          {list.map(e => <Tag key={e.id} color={tagColorFor(e.id ?? e.nome)}>{e.nome}</Tag>)}
+        </Space>
+      )
+      const ids = record.escritorios_ids || []
+      if (ids.length && Array.isArray(escritorios)) {
+        const names = ids.map(id => (escritorios as Escritorio[]).find(e => e.id === id)?.nome).filter(Boolean) as string[]
+        return names.length ? (
+          <Space wrap>
+            {names.map((n, i) => <Tag key={`${record.id}-${i}`} color={tagColorFor(n)}>{n}</Tag>)}
+          </Space>
+        ) : '—'
+      }
+      const derived = officesByAdv[record.id] || officesByAdv[(record as any).advogado_id]
+      if (derived && derived.length) return (
+        <Space wrap>
+          {derived.map(e => <Tag key={e.id} color={tagColorFor(e.id ?? e.nome)}>{e.nome}</Tag>)}
+        </Space>
+      )
+      return '—'
+    } },
     {
       title: 'Ações',
       render: (_: any, record: Advogado) => (
         <Space>
-          <Button onClick={() => { setEditing(record); setOpen(true); form.setFieldsValue({ nome: record.nome, oab: record.oab, email: record.email, telefone: record.telefone, especialidade_id: record.especialidade_id || undefined }) }}>Editar</Button>
+          <Button onClick={() => { setEditing(record); setOpen(true); form.setFieldsValue({ nome: record.nome, oab: record.oab, email: record.email, telefone: record.telefone, especialidade_id: record.especialidade_id || undefined, escritorios_ids: record.escritorios_ids || [] }) }}>Editar</Button>
           <Button danger disabled={deleting} loading={deleting} onClick={async () => { await deleteAdvogado(record.id) }}>Excluir</Button>
         </Space>
       )
     }
-  ], [form, espList])
+  ], [form, espList, escritorios, officesByAdv])
 
   return (
     <Card title="Advogados">
@@ -93,6 +153,9 @@ export default function Advogados() {
           </Form.Item>
           <Form.Item name="especialidade_id" label="Especialidade">
             <Select allowClear options={espList.map(e => ({ label: e.nome, value: e.id }))} />
+          </Form.Item>
+          <Form.Item name="escritorios_ids" label="Escritórios">
+            <Select mode="multiple" allowClear options={(Array.isArray(escritorios) ? escritorios : []).map(e => ({ label: e.nome, value: e.id }))} />
           </Form.Item>
         </Form>
       </Drawer>

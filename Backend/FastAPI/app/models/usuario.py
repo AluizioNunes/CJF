@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Text
+from sqlalchemy import String, Text, Integer
 from sqlalchemy.sql import quoted_name
 from ..database import Base
 from .common import BaseModelMixin
@@ -14,3 +14,4 @@ class Usuario(Base, BaseModelMixin):
     role: Mapped[str | None] = mapped_column(String(64), nullable=True)
     senha_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     permissoes: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON serializado
+    advogado_id: Mapped[int | None] = mapped_column(Integer, nullable=True)

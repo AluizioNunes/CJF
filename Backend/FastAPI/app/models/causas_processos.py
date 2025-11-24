@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, Text, Numeric
+from sqlalchemy import String, Integer, Text, Numeric, Date
+from datetime import date
 from sqlalchemy.sql import quoted_name
 from ..database import Base
 from .common import BaseModelMixin
@@ -15,4 +16,5 @@ class CausaProcesso(Base, BaseModelMixin):
     advogado_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     escritorio_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     especialidade_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dataDistribuicao: Mapped[date | None] = mapped_column("datadistribuicao", Date, nullable=True)
     valor: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)

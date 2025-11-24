@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict
+from datetime import date
 from typing import Optional
 from .common import UppercaseModel
 
@@ -11,6 +12,7 @@ class CausaProcessoBase(UppercaseModel):
     advogado_id: Optional[int] = None
     escritorio_id: Optional[int] = None
     especialidade_id: Optional[int] = None
+    dataDistribuicao: Optional[str | date] = None
     valor: Optional[float] = None
 
 
@@ -31,4 +33,5 @@ class CausaProcessoUpdate(UppercaseModel):
     advogado_id: Optional[int] = None
     escritorio_id: Optional[int] = None
     especialidade_id: Optional[int] = None
+    dataDistribuicao: Optional[str | date] = None
     valor: Optional[float] = None

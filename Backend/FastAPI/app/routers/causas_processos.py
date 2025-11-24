@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import List, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -7,19 +7,29 @@ from ..models.causas_processos import CausaProcesso
 from ..schemas.causas_processos import CausaProcessoCreate, CausaProcessoRead, CausaProcessoUpdate
 from ..models.auditoria import Auditoria
 from .utils import upper_except_email, build_diff
+from .auth import _resolve_token
 
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[CausaProcessoRead], summary="Listar Causas e Processos")
-def list_causas(db: Session = Depends(get_db)) -> List[CausaProcessoRead]:
+def list_causas(authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> List[CausaProcessoRead]:
+    ctx = _resolve_token(authorization, db)
+    if ctx and ctx.get("escritorio_id"):
+        return db.query(CausaProcesso).filter(CausaProcesso.escritorio_id == ctx["escritorio_id"]).all()  # type: ignore
     return db.query(CausaProcesso).all()
 
 
 @router.post("/", response_model=CausaProcessoRead, summary="Criar Causa/Processo")
 def create_causa(payload: CausaProcessoCreate, db: Session = Depends(get_db)) -> CausaProcessoRead:
+    from datetime import date
     data = upper_except_email(payload.model_dump())
+    if isinstance(data.get("dataDistribuicao"), str):
+        try:
+            data["dataDistribuicao"] = date.fromisoformat(data["dataDistribuicao"])  # type: ignore
+        except Exception:
+            pass
     row = CausaProcesso(**data)
     db.add(row)
     db.commit()
@@ -42,9 +52,16 @@ def update_causa(row_id: int, payload: CausaProcessoUpdate, db: Session = Depend
         "advogado_id": row.advogado_id,
         "escritorio_id": row.escritorio_id,
         "especialidade_id": row.especialidade_id,
+        "dataDistribuicao": str(row.dataDistribuicao) if row.dataDistribuicao is not None else None,
         "valor": float(row.valor) if row.valor is not None else None,
     }
+    from datetime import date
     data = upper_except_email(payload.model_dump(exclude_unset=True))
+    if isinstance(data.get("dataDistribuicao"), str):
+        try:
+            data["dataDistribuicao"] = date.fromisoformat(data["dataDistribuicao"])  # type: ignore
+        except Exception:
+            pass
     for k, v in data.items():
         setattr(row, k, v)
     db.commit()
